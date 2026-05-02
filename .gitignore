@@ -1,6 +1,6 @@
 proxies.txt
 dist/
 node_modules
-src/_previous
-src/_trash
+_previous
+_trash
 .DS_Store

@@ -271,6 +271,27 @@ X Investigate why this page doesn't set the background image and why other reque
 
 ## TODO
 
+* pagination in cdx fetch
+* download warc/revisit (missing required cdx entry fields)?
+* review indexes
+* show similar path/relaxed domain
+  - replay
+  - resource list
+* non-ascii chars in url
+  http://brasilmusicpress.com:80/clientes/sagitta/fotos-alta/DivulgaÐ·Ð³o%201.jpg
+  http://brasilmusicpress.com:80/clientes/sagitta/fotos-alta/DivulgaÐ·Ð³o%201_thumb.jpg
+* report outdated query result (more files arrived)
+  - refresh the search?
+  - order by download time?
+* stop/slow down on 429/503?
+* list conditions matched on reacted resources (reaction view)
+- include counts besides domain/condition/reaction
+* internal server error style
+- link reaction to resource_version
+  to avoid reaction list show a different version
+  but show in search results if a different version of that resource with same digest was liked?
+- counts per domain (run) -> double counting because no request -> domain direct relationship?
+
 * Download additional domains
   * from "press" page
   * .com domain of a news website (roadiecrew.com?)
@@ -290,14 +311,9 @@ X sync
 * recreate db with FK
 * detect indexes to be created (lookup for sync)
 * detect url resolving to multiple cdx entries?
-* versions
-  - show similar path/relaxed domain
-* non-ascii chars in url
-  http://brasilmusicpress.com:80/clientes/sagitta/fotos-alta/DivulgaÐ·Ð³o%201.jpg
-  http://brasilmusicpress.com:80/clientes/sagitta/fotos-alta/DivulgaÐ·Ð³o%201_thumb.jpg
+
 * multiple successful requests for a cdx_entry? prevent
   - handle concurrent download runs for same domain (race creating symlinks + setting successful_terminal_request_id)
-* report outdated query result (more files arrived)
 X multithread search
 X id -> uuid -> insert only after filesystem operations complete
 X rockbrigade -> slow -> change queries to use fields current=true, is_successful_terminal
@@ -323,7 +339,6 @@ X duplicate results: http://localhost:5050/search_results?search_id=7
 * latin/utf8
 * option: regex/literal
 * compare two searches (subtract)
-* stop/slow down on 429/503?
 
 
 TODO
@@ -360,7 +375,6 @@ X script to generate htmlparser stream from existing html files
     - condition?
 - script to set field last_errored_request in cdx_entry
 - modify downloader to set last_errored_request
-- include counts besides domain/condition/reaction
 - add select all/none to toggles/checkboxes
 - change reaction filter behavior in search result
   - include "no reaction"
