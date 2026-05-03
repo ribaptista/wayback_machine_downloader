@@ -284,13 +284,14 @@ X Investigate why this page doesn't set the background image and why other reque
   - refresh the search?
   - order by download time?
 * stop/slow down on 429/503?
-* list conditions matched on reacted resources (reaction view)
 - include counts besides domain/condition/reaction
 * internal server error style
 - link reaction to resource_version
   to avoid reaction list show a different version
   but show in search results if a different version of that resource with same digest was liked?
 - counts per domain (run) -> double counting because no request -> domain direct relationship?
+- clean up errors on success/latest error
+- error list page
 
 * Download additional domains
   * from "press" page

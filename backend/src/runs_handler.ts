@@ -42,7 +42,10 @@ export interface RunStats {
 
 export function getRunsData(db: DB): RunStats[] {
   const runs = db
-    .prepare<[], RunRow>(`SELECT id, created_at FROM run ORDER BY created_at DESC`)
+    .prepare<
+      [],
+      RunRow
+    >(`SELECT id, created_at FROM run ORDER BY created_at DESC`)
     .all();
 
   const argStmt = db.prepare<[string], RunArgRow>(

@@ -77,7 +77,8 @@ export function openDatabase(filePath: string): DB {
     );
 
     CREATE TABLE IF NOT EXISTS request (
-      id TEXT PRIMARY KEY,
+      seq INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT NOT NULL UNIQUE,
       run_id TEXT NOT NULL REFERENCES run(id) ON DELETE CASCADE,
       resource_version_url TEXT NOT NULL,
       resource_version_timestamp INTEGER NOT NULL,

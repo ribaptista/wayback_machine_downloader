@@ -132,12 +132,15 @@ export async function downloadEntry(
       status_code, body_digest, inferred_gzip,
       duration_ms, proxy_address, is_successful,
       mimetype, location, location_original, location_timestamp
-    ) VALUES (
-      ?, ?,
-      ?, ?,
-      ?, ?, ?,
-      ?, ?, ?,
-      ?, ?, ?, ?
+    )
+    SELECT ?, ?,
+           ?, ?,
+           ?, ?, ?,
+           ?, ?, ?,
+           ?, ?, ?, ?
+    WHERE NOT EXISTS (
+      SELECT 1 FROM resource_version
+      WHERE url = ? AND timestamp = ? AND successful_request_id IS NOT NULL
     )
   `);
   const insertRequestError = db.prepare(`
@@ -196,7 +199,7 @@ export async function downloadEntry(
       }
     } catch (err) {
       const errorID = randomUUID();
-      insertRequest.run(
+      const re = insertRequest.run(
         errorID,
         runId,
         urlOriginal,
@@ -211,7 +214,10 @@ export async function downloadEntry(
         null,
         null,
         null,
+        urlOriginal,
+        urlTimestamp,
       );
+      if (re.changes === 0) return true;
       const {
         name: errName,
         code: errCode,
@@ -333,10 +339,11 @@ export async function downloadEntry(
     const isSuccessful = errors.length === 0;
 
     // Insert request row, errors, and headers in a single transaction
+    let skipped = false;
     let redirectTargetIsNew = false;
     let isNewSuccessfulRequest = false;
     const insertAll = db.transaction(() => {
-      insertRequest.run(
+      const ir = insertRequest.run(
         requestId,
         runId,
         urlOriginal,
@@ -351,7 +358,13 @@ export async function downloadEntry(
         locationHeader,
         parsedRedirectTarget?.original ?? null,
         parsedRedirectTarget?.timestamp ?? null,
+        urlOriginal,
+        urlTimestamp,
       );
+      if (ir.changes === 0) {
+        skipped = true;
+        return;
+      }
 
       for (const { name = null, code, message } of errors) {
         insertRequestError.run(requestId, name, code, message);
@@ -393,9 +406,10 @@ export async function downloadEntry(
 
     let finalAssetPath: string | null = null;
     let symlinkPath: string | null = null;
+    let rawBodyPath: string | null = null;
 
     if (inferredGzip) {
-      await saveRawBody(
+      rawBodyPath = await saveRawBody(
         rawBody,
         finalBody !== null,
         requestId,
@@ -446,8 +460,13 @@ export async function downloadEntry(
 
     insertAll();
 
+    if (skipped) {
+      await deleteGeneratedFiles(symlinkPath, rawBodyPath);
+      return true;
+    }
+
     if (isSuccessful && !isNewSuccessfulRequest) {
-      await deleteGeneratedFiles(symlinkPath);
+      await deleteGeneratedFiles(symlinkPath, rawBodyPath);
     }
 
     // Follow redirect
@@ -476,12 +495,13 @@ async function saveRawBody(
   requestId: string,
   outputFolder: string,
   runId: string,
-): Promise<void> {
+): Promise<string> {
   const gzipSubdir = decompressSucceeded ? 'gzip' : 'gzip_failed';
   const gzipDir = path.join(outputFolder, 'raw_responses', runId, gzipSubdir);
   const gzipFilePath = nestedIdPath(gzipDir, requestId, 2);
   await fs.promises.mkdir(path.dirname(gzipFilePath), { recursive: true });
   await fs.promises.writeFile(gzipFilePath, rawBody);
+  return gzipFilePath;
 }
 
 async function saveFinalBody(
@@ -515,9 +535,15 @@ async function saveFinalBody(
   }
 }
 
-async function deleteGeneratedFiles(symlinkPath: string | null): Promise<void> {
+async function deleteGeneratedFiles(
+  symlinkPath: string | null,
+  rawBodyPath: string | null,
+): Promise<void> {
   if (symlinkPath) {
     await fs.promises.unlink(symlinkPath).catch(() => {});
+  }
+  if (rawBodyPath) {
+    await fs.promises.unlink(rawBodyPath).catch(() => {});
   }
 }
 
