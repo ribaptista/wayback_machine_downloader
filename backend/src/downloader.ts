@@ -49,21 +49,18 @@ async function fetchNoRedirect(
   proxy: ProxyEntry,
 ): Promise<RawResponse> {
   const ac = new AbortController();
-
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      ac.abort();
-      reject(new Error(`request timed out`));
-    }, ABORT_CONTROLLER_TIMEOUT_MS);
-  });
-
-  const fetchPromise = undiciRequest(url, {
-    method: 'GET',
-    dispatcher: proxy.agent,
-    signal: ac.signal,
-    headersTimeout: HEADER_TIMEOUT_MS,
-    bodyTimeout: BODY_TIMEOUT_MS,
-  }).then(async ({ statusCode, headers, body }) => {
+  const timeout = setTimeout(
+    () => ac.abort(new Error('request timed out')),
+    ABORT_CONTROLLER_TIMEOUT_MS,
+  );
+  try {
+    const { statusCode, headers, body } = await undiciRequest(url, {
+      method: 'GET',
+      dispatcher: proxy.agent,
+      signal: ac.signal,
+      headersTimeout: HEADER_TIMEOUT_MS,
+      bodyTimeout: BODY_TIMEOUT_MS,
+    });
     const chunks: Buffer[] = [];
     for await (const chunk of body as AsyncIterable<Buffer>) {
       chunks.push(chunk);
@@ -73,11 +70,9 @@ async function fetchNoRedirect(
       headers: headers,
       body: Buffer.concat(chunks),
     } as RawResponse;
-  });
-
-  // Suppress unhandled rejection if timeout wins the race and fetch fails afterward
-  fetchPromise.catch(() => {});
-  return Promise.race([fetchPromise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 interface RequestError {

@@ -218,27 +218,32 @@ export async function fetchCdxRows(domain: string): Promise<ParsedCdxEntry[]> {
   console.log(`Fetching CDX from: ${url}`);
 
   let rows: string[][];
-  let response: Response;
   for (let attempt = 1; ; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(new Error('CDX fetch timed out after 60s')),
+      60_000,
+    );
     try {
-      response = await fetch(url, { signal: AbortSignal.timeout(60000) });
+      const response = await fetch(url, { signal: controller.signal });
 
       if (!response.ok) {
         throw new Error(`CDX fetch failed with status ${response.status}`);
       }
 
+      rows = (await response.json()) as string[][];
       break;
     } catch (err) {
       console.error(`CDX fetch attempt ${attempt} failed: ${err}`);
       console.log(`Retrying in 10 seconds...`);
       await new Promise((resolve) => setTimeout(resolve, 10_000));
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
-  const json = (await response.json()) as string[][];
-  if (!Array.isArray(json)) {
+  if (!Array.isArray(rows)) {
     throw new Error('CDX response is not a JSON array');
   }
-  rows = json;
-  return parseCdxRows(rows);
+  return parseCdxRows(rows!);
 }
