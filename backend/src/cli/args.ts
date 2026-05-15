@@ -1,0 +1,195 @@
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+import path from 'path';
+import {
+  DEFAULT_CDX_BASE_URL,
+  DEFAULT_CDX_STRATEGY,
+  DEFAULT_REPLAY_BASE_URL,
+} from '../cdx/sync';
+
+export interface CliArgs {
+  domain: string[];
+  all: boolean;
+  output: string;
+  db: string;
+  cdxPageSize: number;
+  proxyFile: string | undefined;
+  maxReqPerPeriod: number | undefined;
+  periodMs: number | undefined;
+  concurrency: number;
+  retryErrors: boolean;
+  skipErrors: string[];
+  skipErrorMessages: string[];
+  dryRun: boolean;
+  verbose: boolean;
+  cdxBaseUrl: string;
+  cdxStrategy: 'json_wayback' | 'json_pywb';
+  replayBaseUrl: string;
+}
+
+const DEFAULT_CDX_PAGE_SIZE = 128;
+
+export function parseArgs(): CliArgs {
+  const argv = yargs(hideBin(process.argv))
+    .option('domain', {
+      type: 'array',
+      string: true,
+      description: 'Domain(s) to download from Wayback Machine',
+    })
+    .option('all', {
+      type: 'boolean',
+      default: false,
+      description: 'Process all domains present in cdx_file table',
+    })
+    .option('output', {
+      type: 'string',
+      description: 'Output folder location',
+      default: './output',
+    })
+    .option('db', {
+      type: 'string',
+      description: 'Path to SQLite database file',
+      default: './wayback.db',
+    })
+    .option('cdx-page-size', {
+      type: 'number',
+      description: 'CDX API page size (env: CDX_PAGE_SIZE)',
+      default: DEFAULT_CDX_PAGE_SIZE,
+    })
+    .option('proxy-file', {
+      type: 'string',
+      description: 'Text file with one proxy IP per line',
+    })
+    .option('max-req-per-second', {
+      type: 'number',
+      description: 'Max requests per second per proxy',
+    })
+    .option('max-req-per-minute', {
+      type: 'number',
+      description: 'Max requests per minute per proxy',
+    })
+    .option('concurrency', {
+      type: 'number',
+      description: 'Max concurrent requests',
+      default: 5,
+    })
+    .option('retry-errors', {
+      type: 'boolean',
+      default: false,
+      description:
+        'Retry non-successful entries for the given domains instead of fetching new CDX',
+    })
+    .option('skip-error', {
+      type: 'array',
+      string: true,
+      description: 'Error code(s) to treat as success when downloading',
+    })
+    .option('skip-error-message', {
+      type: 'array',
+      string: true,
+      description:
+        'Error message substring(s) to treat as success when downloading',
+    })
+    .option('cdx-base-url', {
+      type: 'string',
+      description: 'Base URL for CDX API',
+      default: DEFAULT_CDX_BASE_URL,
+    })
+    .option('cdx-strategy', {
+      type: 'string',
+      choices: ['json_wayback', 'json_pywb'] as const,
+      description:
+        'CDX fetch strategy: json_wayback (Wayback resumeKey pagination) or json_pywb (single-page jsonlines)',
+      default: DEFAULT_CDX_STRATEGY,
+    })
+    .option('replay-base-url', {
+      type: 'string',
+      description: 'Base URL for replaying archived resources',
+      default: DEFAULT_REPLAY_BASE_URL,
+    })
+    .option('dry-run', {
+      type: 'boolean',
+      default: false,
+      description:
+        'Show a summary of what would be downloaded without actually downloading',
+    })
+    .option('v', {
+      alias: 'verbose',
+      type: 'boolean',
+      default: false,
+      description: 'Show individual entries in the dry-run summary',
+    })
+    .check((args) => {
+      const domains = (args['domain'] as string[] | undefined) ?? [];
+      if (args['all'] && domains.length > 0) {
+        throw new Error('--all and --domain are mutually exclusive');
+      }
+      if (!args['all'] && domains.length === 0) {
+        throw new Error('Either --domain or --all must be provided');
+      }
+      const skipErrors = (args['skip-error'] as string[] | undefined) ?? [];
+      const skipErrorMessages =
+        (args['skip-error-message'] as string[] | undefined) ?? [];
+      if (
+        args['max-req-per-second'] !== undefined &&
+        args['max-req-per-minute'] !== undefined
+      ) {
+        throw new Error(
+          '--max-req-per-second and --max-req-per-minute are mutually exclusive; provide only one',
+        );
+      }
+      if (
+        !args['dry-run'] &&
+        args['max-req-per-second'] === undefined &&
+        args['max-req-per-minute'] === undefined
+      ) {
+        throw new Error(
+          'Either --max-req-per-second or --max-req-per-minute must be provided',
+        );
+      }
+      const cdxPageSize = args['cdx-page-size'];
+      if (
+        typeof cdxPageSize !== 'number' ||
+        !Number.isInteger(cdxPageSize) ||
+        cdxPageSize <= 0
+      ) {
+        throw new Error('--cdx-page-size must be a positive integer');
+      }
+      return true;
+    })
+    .parseSync();
+
+  const domain = (argv['domain'] as string[] | undefined) ?? [];
+  const skipErrors = (argv['skip-error'] as string[] | undefined) ?? [];
+  const skipErrorMessages =
+    (argv['skip-error-message'] as string[] | undefined) ?? [];
+
+  const maxReqPerPeriod =
+    argv['max-req-per-second'] !== undefined
+      ? (argv['max-req-per-second'] as number)
+      : argv['max-req-per-minute'] !== undefined
+        ? (argv['max-req-per-minute'] as number)
+        : undefined;
+
+  const periodMs = argv['max-req-per-minute'] !== undefined ? 60_000 : 1_000;
+
+  return {
+    domain,
+    all: argv.all as boolean,
+    output: path.resolve(argv.output as string),
+    db: path.resolve(argv.db as string),
+    cdxPageSize: argv['cdx-page-size'] as number,
+    proxyFile: argv['proxy-file'] as string | undefined,
+    maxReqPerPeriod,
+    periodMs: maxReqPerPeriod !== undefined ? periodMs : undefined,
+    concurrency: argv.concurrency as number,
+    retryErrors: argv['retry-errors'] as boolean,
+    skipErrors,
+    skipErrorMessages,
+    dryRun: argv['dry-run'] as boolean,
+    verbose: argv.v as boolean,
+    cdxBaseUrl: argv['cdx-base-url'] as string,
+    cdxStrategy: argv['cdx-strategy'] as 'json_wayback' | 'json_pywb',
+    replayBaseUrl: argv['replay-base-url'] as string,
+  };
+}

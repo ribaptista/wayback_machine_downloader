@@ -1,5 +1,5 @@
 import path from 'path';
-import { htmlExtractToFiles } from '../src/html';
+import { htmlExtractToFiles } from '../src/file/html';
 
 const [, , inputPath, outputPrefix] = process.argv;
 

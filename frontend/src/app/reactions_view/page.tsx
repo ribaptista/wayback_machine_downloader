@@ -136,7 +136,7 @@ function ReactionsViewInner() {
                 size="sm"
                 className="aria-pressed:bg-primary/10 aria-pressed:text-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
               >
-                <DynamicIcon name={rt.emoji} active={isSelected} />
+                <DynamicIcon name={rt.icon} active={isSelected} />
                 {rt.label}
               </Toggle>
             );

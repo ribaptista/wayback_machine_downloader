@@ -19,7 +19,7 @@ export interface ContextWindow {
 export interface ReactionType {
   id: number;
   label: string;
-  emoji: string;
+  icon: string;
 }
 
 export function DynamicIcon({ name, active }: { name: string; active: boolean }) {
@@ -175,7 +175,7 @@ export function FileResultCard({
                       size="sm"
                       className="aria-pressed:bg-primary/10 aria-pressed:text-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
                     >
-                      <DynamicIcon name={rt.emoji} active={isActive} />
+                      <DynamicIcon name={rt.icon} active={isActive} />
                       {rt.label !== "Like" && <span>{rt.label}</span>}
                     </Toggle>
                   );

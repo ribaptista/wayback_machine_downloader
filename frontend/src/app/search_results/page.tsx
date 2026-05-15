@@ -31,8 +31,7 @@ interface Condition {
 }
 
 interface Domain {
-  id: string;
-  domain: string;
+  name: string;
 }
 
 interface FileResult {
@@ -138,7 +137,7 @@ function SearchResultsInner() {
       .then((d: SearchResultsData) => {
         setData(d);
         setActiveReactions(new Set(d.activeReactions));
-        setLocalDomains(d.filterDomains.length > 0 ? new Set(d.filterDomains) : new Set(d.domains.map((x: Domain) => x.id)));
+        setLocalDomains(d.filterDomains.length > 0 ? new Set(d.filterDomains) : new Set(d.domains.map((x: Domain) => x.name)));
         setLocalConditions(d.filterConditionIds.length > 0 ? new Set(d.filterConditionIds) : new Set(d.conditions.map((x: Condition) => x.id)));
         setLocalReactions(new Set(d.filterReactionTypeIds));
         setFilterInvisible(false);
@@ -161,7 +160,7 @@ function SearchResultsInner() {
     if (similarTo) u.set("similar_to", similarTo);
     // If all domains selected (or none deselected), don't include filter
     const allDomains = data?.domains ?? [];
-    const allSelected = allDomains.every((d) => localDomains.has(d.id));
+    const allSelected = allDomains.every((d) => localDomains.has(d.name));
     if (!allSelected) for (const id of localDomains) u.append("domain[]", id);
     const allConds = data?.conditions ?? [];
     const allCondsSelected = allConds.every((c) => localConditions.has(c.id));
@@ -302,7 +301,7 @@ function SearchResultsInner() {
               {domains.length > 0 && (
                 <ToggleGroupWithSelectAll
                   label="Domains"
-                  items={domains.map((d) => ({ id: d.id, label: d.domain }))}
+                  items={domains.map((d) => ({ id: d.name, label: d.name }))}
                   selected={localDomains}
                   onChange={setLocalDomains}
                   counts={data.countsByDomain}
@@ -359,7 +358,7 @@ function SearchResultsInner() {
                             })
                           }
                         >
-                          <DynamicIcon name={rt.emoji} active={localReactions.has(rt.id)} />
+                          <DynamicIcon name={rt.icon} active={localReactions.has(rt.id)} />
                           {rt.label}{count !== undefined && <span className="ml-1 opacity-60 font-normal text-xs">({count})</span>}
                         </Button>
                       );

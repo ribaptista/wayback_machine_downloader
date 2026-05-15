@@ -11,7 +11,7 @@ import { ErrorMessage } from "@/components/ui/error-message";
 
 interface ErrorDetail {
   error_code: string;
-  error_name: string | null;
+  error_name: string;
   error_message: string;
 }
 
@@ -27,12 +27,9 @@ interface ErrorsData {
   nextCursor: { url: string; timestamp: number } | null;
 }
 
-// Matches the backend sentinel for NULL error_name values
-const NULL_NAME_SENTINEL = "__null__";
-
 interface FilterOption {
   error_code: string;
-  error_name: string | null;
+  error_name: string;
 }
 
 function DomainErrorsInner() {
@@ -74,11 +71,7 @@ function DomainErrorsInner() {
       .then((opts) => {
         setFilterOptions(opts);
         const allCodes = [...new Set(opts.map((f) => f.error_code))];
-        const hasNullName = opts.some((f) => f.error_name === null);
-        const allNames = [
-          ...new Set(opts.map((f) => f.error_name).filter((n): n is string => n !== null)),
-          ...(hasNullName ? [NULL_NAME_SENTINEL] : []),
-        ];
+        const allNames = [...new Set(opts.map((f) => f.error_name))];
         if (appliedCodes.length === 0) setSelectedCodes(new Set(allCodes));
         if (appliedNames.length === 0) setSelectedNames(new Set(allNames));
       })
@@ -145,11 +138,7 @@ function DomainErrorsInner() {
 
   // Distinct codes and names for filter pills
   const distinctCodes = [...new Set(filterOptions.map((f) => f.error_code))];
-  const hasNullName = filterOptions.some((f) => f.error_name === null);
-  const distinctNames = [
-    ...new Set(filterOptions.map((f) => f.error_name).filter((n): n is string => n !== null)),
-    ...(hasNullName ? [NULL_NAME_SENTINEL] : []),
-  ];
+  const distinctNames = [...new Set(filterOptions.map((f) => f.error_name))];
   const isCodeActive = (code: string) => selectedCodes.has(code);
   const isNameActive = (name: string) => selectedNames.has(name);
 
@@ -258,7 +247,7 @@ function DomainErrorsInner() {
                         })
                       }
                     >
-                      {name === NULL_NAME_SENTINEL ? "(no name)" : name}
+                      {name || "(no name)"}
                     </Button>
                   ))}
                 </div>
@@ -302,7 +291,7 @@ function DomainErrorsInner() {
                     <td className="px-3 py-2 whitespace-nowrap">
                       <code className="text-xs text-destructive">{e.error_code}</code>
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-xs">{e.error_name ?? <span className="text-muted-foreground">—</span>}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">{e.error_name || <span className="text-muted-foreground">—</span>}</td>
                     <td className="px-3 py-2 text-xs text-muted-foreground max-w-sm truncate" title={e.error_message}>
                       {e.error_message}
                     </td>

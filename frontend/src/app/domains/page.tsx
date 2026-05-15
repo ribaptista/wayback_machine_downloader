@@ -9,12 +9,11 @@ import { Spinner } from "@/components/ui/spinner";
 import { ErrorMessage } from "@/components/ui/error-message";
 
 interface DomainStats {
-  id: string;
-  domain: string;
+  name: string;
   resources: number;
-  downloaded: number;
-  errored: number;
-  pending: number;
+  successful_entry_count: number;
+  errored_entry_count: number;
+  pending_entry_count: number;
 }
 
 export default function DomainsPage() {
@@ -45,25 +44,25 @@ export default function DomainsPage() {
       {domains && domains.length > 0 && (
         <div className="space-y-3">
           {domains.map((d) => (
-            <Card key={d.id}>
+            <Card key={d.name}>
               <CardHeader className="py-3 px-4 pb-0">
-                <p className="font-semibold">{d.domain}</p>
+                <p className="font-semibold">{d.name}</p>
               </CardHeader>
               <CardContent className="px-4 py-3 flex flex-wrap gap-2">
                 <Badge variant="secondary">{d.resources} resources</Badge>
-                <Badge variant="default">{d.downloaded} downloaded</Badge>
-                {d.errored > 0 && (
+                <Badge variant="default">{d.successful_entry_count} downloaded</Badge>
+                {d.errored_entry_count > 0 && (
                   <Badge variant="destructive" className="cursor-pointer p-0">
                     <a
-                      href={`/domain_errors?domain=${encodeURIComponent(d.domain)}`}
+                      href={`/domain_errors?domain=${encodeURIComponent(d.name)}`}
                       className="px-2.5 py-0.5 block"
                     >
-                      {d.errored} errored
+                      {d.errored_entry_count} errored
                     </a>
                   </Badge>
                 )}
-                {d.pending > 0 && (
-                  <Badge variant="outline">{d.pending} pending</Badge>
+                {d.pending_entry_count > 0 && (
+                  <Badge variant="outline">{d.pending_entry_count} pending</Badge>
                 )}
               </CardContent>
             </Card>

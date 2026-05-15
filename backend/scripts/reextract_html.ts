@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
-import { nestedIdPath } from '../src/id-path';
-import { htmlExtractToFiles } from '../src/html';
-import type { ExtractOptions } from '../src/html';
+import { nestedIdPath } from '../src/file/id-path';
+import { htmlExtractToFiles } from '../src/file/html';
+import type { ExtractOptions } from '../src/file/html';
 
 const [, , dbPath, basePath] = process.argv;
 

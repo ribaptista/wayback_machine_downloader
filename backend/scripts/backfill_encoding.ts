@@ -13,8 +13,8 @@
 import fs from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
-import { nestedIdPath } from '../src/id-path';
-import { detectEncoding } from '../src/encoding';
+import { nestedIdPath } from '../src/file/id-path';
+import { detectEncoding } from '../src/file/encoding';
 
 async function main() {
   const [dbPath, assetsFolder] = process.argv.slice(2);

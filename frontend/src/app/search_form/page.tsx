@@ -10,8 +10,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroupWithSelectAll } from "@/components/ToggleGroupWithSelectAll";
 
 interface Domain {
-  id: string;
-  domain: string;
+  name: string;
 }
 
 interface Condition {
@@ -32,7 +31,7 @@ export default function SearchFormPage() {
       .then((r) => r.json())
       .then((loaded: Domain[]) => {
         setDomains(loaded);
-        setSelectedDomains(new Set(loaded.map((d) => d.id)));
+        setSelectedDomains(new Set(loaded.map((d) => d.name)));
       })
       .catch(() => {});
   }, []);
@@ -165,7 +164,7 @@ export default function SearchFormPage() {
 
         <ToggleGroupWithSelectAll
           label="Domains"
-          items={domains.map((d) => ({ id: d.id, label: d.domain }))}
+          items={domains.map((d) => ({ id: d.name, label: d.name }))}
           selected={selectedDomains}
           onChange={setSelectedDomains}
           renderItem={(item, isSelected, toggle) => (

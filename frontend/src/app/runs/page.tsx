@@ -20,7 +20,7 @@ interface DomainCount {
 
 interface ErrorType {
   domain: string;
-  error_name: string | null;
+  error_name: string;
   error_code: string;
   count: number;
 }
@@ -29,7 +29,7 @@ interface RunStats {
   id: string;
   created_at: string;
   args: RunArg[];
-  new_cdx_entry_count: number;
+  new_entry_count: number;
   requested_total: number;
   requested_by_domain: DomainCount[];
   downloaded_total: number;
@@ -88,7 +88,7 @@ export default function RunsPage() {
                 {/* CDX entries */}
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground w-28 shrink-0">New CDX entries</span>
-                  <Badge variant="outline">{run.new_cdx_entry_count}</Badge>
+                  <Badge variant="outline">{run.new_entry_count}</Badge>
                 </div>
 
                 {/* Requested */}
