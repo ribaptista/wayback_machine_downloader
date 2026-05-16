@@ -13,8 +13,8 @@
 import fs from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
-import { nestedIdPath } from '../src/file/id-path';
-import { detectEncoding } from '../src/file/encoding';
+import { nestedIdPath } from '../src/storage/id-path';
+import { detectEncoding } from '../src/storage/encoding';
 
 async function main() {
   const [dbPath, assetsFolder] = process.argv.slice(2);
@@ -95,7 +95,7 @@ async function main() {
       }
 
       try {
-        const result = detectEncoding(headers, html);
+        const result = detectEncoding(headers['content-type'], html);
         updateRequest.run(
           result?.encoding ?? null,
           result?.source ?? null,

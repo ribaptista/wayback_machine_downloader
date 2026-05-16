@@ -1,6 +1,6 @@
 import path from 'path';
 import type { Eta } from 'eta';
-import { nestedIdPath } from '../file/id-path';
+import { nestedIdPath } from '../storage/id-path';
 import fs from 'fs';
 import { SearchRepository } from './repository';
 import { ReactionRepository } from '../reaction/repository';

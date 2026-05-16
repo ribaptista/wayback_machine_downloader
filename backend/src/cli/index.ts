@@ -14,6 +14,7 @@ import {
   findNewEntries,
 } from '../cdx/sync';
 import { loadProxies } from '../http/proxy';
+import { ProxyPool } from '../http/proxy_pool';
 import { downloadEntry, type DownloadTask } from '../request/downloader';
 
 import type { Database as DB } from 'better-sqlite3';
@@ -380,10 +381,8 @@ async function main() {
   }
 
   // Live run
-  const proxies = loadProxies(
-    args.proxyFile,
-    args.maxReqPerPeriod!,
-    args.periodMs!,
+  const pool = new ProxyPool(
+    loadProxies(args.proxyFile, args.maxReqPerPeriod!, args.periodMs!),
   );
   const limit = pLimit(args.concurrency);
 
@@ -410,7 +409,7 @@ async function main() {
             cdxRepo,
             runRepo,
             task,
-            proxies,
+            pool,
           );
           if (ok) succeeded++;
           else failed++;

@@ -3,6 +3,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { Readable } from 'stream';
 import { Parser } from 'htmlparser2';
+import { renameTmpOrDiscard } from './fs';
 import { streamFileDecoded } from './encoding';
 
 const TEXT_BOUNDARY_TAGS = new Set([
@@ -173,13 +174,14 @@ type ExtractSuffix = (typeof EXTRACT_SUFFIXES)[number];
 export async function htmlExtractToFiles(
   htmlPath: string,
   outputPrefix: string,
+  tmpPrefix: string,
   options: ExtractOptions = {},
 ): Promise<void> {
   const htmlStream = streamFileDecoded(htmlPath, options.inputEncoding ?? null);
   const streams = Object.fromEntries(
     EXTRACT_SUFFIXES.map((suffix) => [
       suffix,
-      fs.createWriteStream(outputPrefix + suffix),
+      fs.createWriteStream(tmpPrefix + suffix),
     ]),
   ) as Record<ExtractSuffix, fs.WriteStream>;
   await htmlStreamExtract(
@@ -189,46 +191,9 @@ export async function htmlExtractToFiles(
     streams['.comments'],
     options,
   );
-}
-
-export async function htmlExtractToFilesAtomic(
-  htmlPath: string,
-  outputPrefix: string,
-  tmpDir: string,
-  options: ExtractOptions = {},
-): Promise<void> {
-  const tmpPrefix = path.join(tmpDir, `html_${randomUUID()}`);
-
-  await htmlExtractToFiles(htmlPath, tmpPrefix, options);
-
-  function commitSuffix(suffix: ExtractSuffix): void {
-    try {
-      fs.renameSync(tmpPrefix + suffix, outputPrefix + suffix);
-    } catch (err) {
-      if (
-        typeof err === 'object' &&
-        err !== null &&
-        'code' in err &&
-        err.code === 'EEXIST'
-      ) {
-        console.info(
-          `[htmlExtractToFilesAtomic] Output already exists for ${suffix}, discarding tmp file`,
-        );
-        try {
-          fs.unlinkSync(tmpPrefix + suffix);
-        } catch (unlinkErr) {
-          console.error(
-            `[htmlExtractToFilesAtomic] Failed to delete ${tmpPrefix + suffix}:`,
-            unlinkErr,
-          );
-        }
-        return;
-      }
-      throw err;
-    }
-  }
-
-  commitSuffix('.attrs');
-  commitSuffix('.text');
-  commitSuffix('.comments');
+  await Promise.all(
+    EXTRACT_SUFFIXES.map((suffix) =>
+      renameTmpOrDiscard(tmpPrefix + suffix, outputPrefix + suffix),
+    ),
+  );
 }

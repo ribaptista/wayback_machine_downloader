@@ -1,4 +1,3 @@
-import type { Eta } from 'eta';
 import { SearchRepository } from './repository';
 
 export function getSearchesData(searchRepo: SearchRepository) {

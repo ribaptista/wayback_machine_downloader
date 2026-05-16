@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
+import { randomUUID } from 'crypto';
 import Database from 'better-sqlite3';
-import { nestedIdPath } from '../src/file/id-path';
-import { htmlExtractToFiles } from '../src/file/html';
-import type { ExtractOptions } from '../src/file/html';
+import { nestedIdPath } from '../src/storage/id-path';
+import { htmlExtractToFiles } from '../src/storage/html';
+import type { ExtractOptions } from '../src/storage/html';
 
 const [, , dbPath, basePath] = process.argv;
 
@@ -73,21 +74,26 @@ async function main() {
         const options: ExtractOptions = row.encoding
           ? { inputEncoding: row.encoding }
           : {};
-        await htmlExtractToFiles(htmlPath, prefix, {
-          skipTags: [
-            'script',
-            'style',
-            'head',
-            'template',
-            'meta',
-            'link',
-            'base',
-            'noscript',
-            'svg',
-            'math',
-          ],
-          ...options,
-        });
+        await htmlExtractToFiles(
+          htmlPath,
+          prefix,
+          path.join(path.dirname(prefix), `html_${randomUUID()}`),
+          {
+            skipTags: [
+              'script',
+              'style',
+              'head',
+              'template',
+              'meta',
+              'link',
+              'base',
+              'noscript',
+              'svg',
+              'math',
+            ],
+            ...options,
+          },
+        );
         done++;
       } catch (err) {
         errors++;

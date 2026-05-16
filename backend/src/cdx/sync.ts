@@ -76,7 +76,7 @@ export function insertCdxEntries(
     if (entry.isValid) {
       const original = entry.original!;
       const timestamp = entry.timestamp!;
-      const normalizedOriginal = normalizeUrl(original);
+      const normalizedOriginal = normalizeUrl(original).toString();
       cdxRepo.insertTreeNodePaths([normalizedOriginal]);
       cdxRepo.insertOrIgnoreResource(original, normalizedOriginal);
       cdxRepo.insertOrIgnoreResourceVersion(original, timestamp);

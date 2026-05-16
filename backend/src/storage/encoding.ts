@@ -7,7 +7,7 @@ export type EncodingSource = 'bom' | 'header' | 'meta' | 'chardet';
 export interface DetectedEncoding {
   encoding: string;
   source: EncodingSource;
-  chardetConfidence: number | null;
+  chardetConfidence: number | undefined;
 }
 
 // These regexes operate on latin1-decoded bytes and are not UTF-16/32 compatible.
@@ -42,83 +42,63 @@ function bestMatch(results: Match[]): Match | undefined {
   );
 }
 
-/**
- * Detect the character encoding of an HTML document.
- *
- * Priority:
- * 1. BOM at start of buffer (UTF-8, UTF-16 LE/BE, UTF-32 LE/BE)
- * 2. Content-Type response header charset parameter
- * 3. <meta charset> / <meta http-equiv="content-type"> in the first 4096 bytes
- * 4. chardet analysis on cleaned buffer, trying increasing sample sizes
- */
-export function detectEncoding(
-  headers: Record<string, string | string[] | undefined>,
-  html: Buffer,
-): DetectedEncoding | null {
-  // 1. BOM detection
+function detectBom(html: Buffer): DetectedEncoding | undefined {
   if (html.length >= 4) {
-    // UTF-32 LE: FF FE 00 00
     if (
       html[0] === 0xff &&
       html[1] === 0xfe &&
       html[2] === 0x00 &&
       html[3] === 0x00
-    ) {
-      return { encoding: 'UTF-32LE', source: 'bom', chardetConfidence: null };
-    }
-    // UTF-32 BE: 00 00 FE FF
+    )
+      return {
+        encoding: 'UTF-32LE',
+        source: 'bom',
+        chardetConfidence: undefined,
+      };
     if (
       html[0] === 0x00 &&
       html[1] === 0x00 &&
       html[2] === 0xfe &&
       html[3] === 0xff
-    ) {
-      return { encoding: 'UTF-32BE', source: 'bom', chardetConfidence: null };
-    }
+    )
+      return {
+        encoding: 'UTF-32BE',
+        source: 'bom',
+        chardetConfidence: undefined,
+      };
   }
   if (html.length >= 3) {
-    // UTF-8 BOM: EF BB BF
-    if (html[0] === 0xef && html[1] === 0xbb && html[2] === 0xbf) {
-      return { encoding: 'UTF-8', source: 'bom', chardetConfidence: null };
-    }
+    if (html[0] === 0xef && html[1] === 0xbb && html[2] === 0xbf)
+      return { encoding: 'UTF-8', source: 'bom', chardetConfidence: undefined };
   }
   if (html.length >= 2) {
-    // UTF-16 LE: FF FE
-    if (html[0] === 0xff && html[1] === 0xfe) {
-      return { encoding: 'UTF-16LE', source: 'bom', chardetConfidence: null };
-    }
-    // UTF-16 BE: FE FF
-    if (html[0] === 0xfe && html[1] === 0xff) {
-      return { encoding: 'UTF-16BE', source: 'bom', chardetConfidence: null };
-    }
-  }
-
-  // 2. Content-Type header
-  const ctRaw = headers['content-type'];
-  const ct = Array.isArray(ctRaw) ? ctRaw[0] : (ctRaw ?? '');
-  if (ct) {
-    const m = CHARSET_IN_CT_RE.exec(ct);
-    if (m) {
+    if (html[0] === 0xff && html[1] === 0xfe)
       return {
-        encoding: m[2],
-        source: 'header',
-        chardetConfidence: null,
+        encoding: 'UTF-16LE',
+        source: 'bom',
+        chardetConfidence: undefined,
       };
-    }
+    if (html[0] === 0xfe && html[1] === 0xff)
+      return {
+        encoding: 'UTF-16BE',
+        source: 'bom',
+        chardetConfidence: undefined,
+      };
   }
+  return undefined;
+}
 
-  // 3. Meta tags in first 4096 bytes
+function detectEncodingMetaChardet(html: Buffer): DetectedEncoding | undefined {
+  // Meta tags in first 4096 bytes
   const head = html.subarray(0, 4096).toString('latin1');
   const m1 = META_CHARSET_RE.exec(head);
-  if (m1) {
-    return { encoding: m1[1], source: 'meta', chardetConfidence: null };
-  }
+  if (m1)
+    return { encoding: m1[1], source: 'meta', chardetConfidence: undefined };
   const m2 = META_HTTP_EQUIV_RE.exec(head);
-  if (m2) {
-    return { encoding: m2[1], source: 'meta', chardetConfidence: null };
-  }
+  if (m2)
+    return { encoding: m2[1], source: 'meta', chardetConfidence: undefined };
 
-  // 4. chardet — strip scripts/styles from latin1, then analyse
+  // chardet — strip scripts/styles from latin1, then analyse
   const latin1 = html.toString('latin1');
   const stripped = stripScriptStyle(latin1);
   const buf = Buffer.from(stripped, 'latin1');
@@ -138,7 +118,6 @@ export function detectEncoding(
     }
   }
 
-  // Return best chardet result even if below threshold
   const best = bestMatch(chardet.analyse(buf));
   if (best) {
     return {
@@ -147,8 +126,38 @@ export function detectEncoding(
       chardetConfidence: best.confidence / 100,
     };
   }
+  return undefined;
+}
 
-  return null;
+/**
+ * Detect the character encoding of an HTML document from the buffer alone.
+ *
+ * Priority: BOM → <meta charset> / <meta http-equiv> → chardet
+ */
+export function detectEncoding(html: Buffer): DetectedEncoding | undefined {
+  return detectBom(html) ?? detectEncodingMetaChardet(html);
+}
+
+/**
+ * Detect the character encoding of an HTML document, also consulting the
+ * HTTP Content-Type header.
+ *
+ * Priority: BOM → Content-Type header charset → <meta charset> → chardet
+ */
+export function detectEncodingHttp(
+  contentTypeHeader: string | undefined,
+  html: Buffer,
+): DetectedEncoding | undefined {
+  const bom = detectBom(html);
+  if (bom) return bom;
+
+  if (contentTypeHeader) {
+    const m = CHARSET_IN_CT_RE.exec(contentTypeHeader);
+    if (m)
+      return { encoding: m[2], source: 'header', chardetConfidence: undefined };
+  }
+
+  return detectEncodingMetaChardet(html);
 }
 
 export function resolveEncoding(

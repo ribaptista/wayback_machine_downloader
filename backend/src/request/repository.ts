@@ -5,22 +5,22 @@ export interface InsertRequestParams {
   runId: string;
   resourceVersionUrl: string;
   resourceVersionTimestamp: number;
-  statusCode: number | null;
-  bodyDigest: string | null;
-  inferredGzip: number | null;
+  statusCode: number | undefined;
+  bodyDigest: string | undefined;
+  inferredGzip: number | undefined;
   durationMs: number;
-  proxyAddress: string | null;
+  proxyAddress: string | undefined;
   isSuccessful: number;
-  mimetype: string | null;
-  location: string | null;
-  locationOriginal: string | null;
-  locationTimestamp: number | null;
-  encoding: string | null;
-  encodingSource: string | null;
-  chardetConfidence: number | null;
-  isForeignRedirect: number | null;
-  redirectDomain: string | null;
-  redirectNormalizedDomain: string | null;
+  mimetype: string | undefined;
+  location: string | undefined;
+  locationOriginal: string | undefined;
+  locationTimestamp: number | undefined;
+  encoding: string | undefined;
+  encodingSource: string | undefined;
+  chardetConfidence: number | undefined;
+  isForeignRedirect: number | undefined;
+  redirectDomain: string | undefined;
+  redirectNormalizedDomain: string | undefined;
 }
 
 export interface RequestCdxInfoRow {

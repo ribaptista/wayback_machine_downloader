@@ -1,5 +1,6 @@
 import path from 'path';
-import { htmlExtractToFiles } from '../src/file/html';
+import { randomUUID } from 'crypto';
+import { htmlExtractToFiles } from '../src/storage/html';
 
 const [, , inputPath, outputPrefix] = process.argv;
 
@@ -17,7 +18,11 @@ console.log(`Input:  ${resolvedInput}`);
 console.log(`Output: ${resolvedOutput}.{text,attrs,comments}`);
 
 async function main() {
-  await htmlExtractToFiles(resolvedInput, resolvedOutput);
+  await htmlExtractToFiles(
+    resolvedInput,
+    resolvedOutput,
+    resolvedOutput + `_tmp_${randomUUID()}`,
+  );
   console.log('Done.');
 }
 

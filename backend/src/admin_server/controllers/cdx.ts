@@ -30,7 +30,7 @@ export function registerCdxRoutes(
     };
     let url: string;
     if (query.originalUrl?.trim()) {
-      url = normalizeUrl(query.originalUrl.trim());
+      url = normalizeUrl(query.originalUrl.trim()).toString();
     } else {
       url = query.url?.trim() || '';
     }

@@ -10,7 +10,7 @@ import type {
   WorkerSuccess,
 } from '../file_search_worker/file_search_worker';
 import { type WorkerError } from '../../worker/worker_utils';
-import { nestedIdPath } from '../../file/id-path';
+import { nestedIdPath } from '../../storage/id-path';
 import { SearchRepository } from '../repository';
 import { CdxRepository } from '../../cdx/repository';
 
@@ -39,63 +39,8 @@ async function runSearchScan(req: SearchScanRequest): Promise<void> {
   const conditions = req.conditions;
 
   const searchRepo = new SearchRepository(db);
+  const cdxRepo = new CdxRepository(db);
   searchRepo.setSearchStatus('running', searchId);
-
-  const updateScanned = (count: number) =>
-    searchRepo.incrementScannedCount(count, searchId);
-
-  const selectPage = (cursorUrl: string, cursorTimestamp: number) =>
-    new CdxRepository(db).findHtmlCandidatesPage({
-      cursorUrl,
-      cursorTimestamp,
-      domainIds: cdxFileIds,
-      limit: PAGE_SIZE,
-    });
-
-  const insertFile = (
-    candidateId: string,
-    url: string,
-    timestamp: number,
-    matchCount: number,
-    contextDigest: string,
-  ) =>
-    searchRepo.insertFile({
-      searchId,
-      requestId: candidateId,
-      url,
-      timestamp,
-      matchCount,
-      contextDigest,
-    });
-
-  const insertFileError = (
-    candidateId: string,
-    url: string,
-    timestamp: number,
-    errorName: string,
-    errorMessage: string,
-  ) =>
-    searchRepo.insertFileError({
-      searchId,
-      requestId: candidateId,
-      url,
-      timestamp,
-      errorName,
-      errorMessage,
-    });
-
-  const insertMatch = (
-    searchFileId: number,
-    conditionId: number,
-    matchOffset: number,
-    matchLength: number,
-  ) =>
-    searchRepo.insertMatch({
-      searchFileId,
-      conditionId,
-      matchOffset,
-      matchLength,
-    });
 
   const saveMatches = db.transaction(
     (
@@ -106,15 +51,21 @@ async function runSearchScan(req: SearchScanRequest): Promise<void> {
       matches: FileMatch[],
     ) => {
       if (matches.length === 0) return;
-      const searchFileId = insertFile(
-        candidateId,
+      const searchFileId = searchRepo.insertFile({
+        searchId,
+        requestId: candidateId,
         url,
         timestamp,
-        matches.length,
+        matchCount: matches.length,
         contextDigest,
-      );
+      });
       for (const m of matches) {
-        insertMatch(searchFileId, m.conditionId, m.matchOffset, m.matchLength);
+        searchRepo.insertMatch({
+          searchFileId,
+          conditionId: m.conditionId,
+          matchOffset: m.matchOffset,
+          matchLength: m.matchLength,
+        });
       }
     },
   );
@@ -127,7 +78,14 @@ async function runSearchScan(req: SearchScanRequest): Promise<void> {
       errorName: string,
       errorMessage: string,
     ) => {
-      insertFileError(candidateId, url, timestamp, errorName, errorMessage);
+      searchRepo.insertFileError({
+        searchId,
+        requestId: candidateId,
+        url,
+        timestamp,
+        errorName,
+        errorMessage,
+      });
     },
   );
 
@@ -183,7 +141,12 @@ async function runSearchScan(req: SearchScanRequest): Promise<void> {
     while (true) {
       pageNum++;
       const queryStart = Date.now();
-      const candidates = selectPage(cursor.url, cursor.timestamp);
+      const candidates = cdxRepo.findHtmlCandidatesPage({
+        cursorUrl: cursor.url,
+        cursorTimestamp: cursor.timestamp,
+        domainIds: cdxFileIds,
+        limit: PAGE_SIZE,
+      });
       console.log(
         `[search ${searchId}] Page ${pageNum}/${totalPages} query: ${Date.now() - queryStart}ms (${candidates.length} rows)`,
       );
@@ -246,7 +209,7 @@ async function runSearchScan(req: SearchScanRequest): Promise<void> {
         url: last.resource_version_url,
         timestamp: last.resource_version_timestamp,
       };
-      updateScanned(candidates.length);
+      searchRepo.incrementScannedCount(candidates.length, searchId);
     }
   } finally {
     await Promise.all(allWorkers.map((w) => w.terminate()));

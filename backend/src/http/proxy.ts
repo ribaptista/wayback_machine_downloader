@@ -3,7 +3,7 @@ import Bottleneck from 'bottleneck';
 import { ProxyAgent, Agent } from 'undici';
 
 export interface ProxyEntry {
-  address: string;
+  address: string | null;
   agent: ProxyAgent | Agent;
   limiter: Bottleneck;
   ongoing: number;
@@ -55,7 +55,7 @@ export function loadProxies(
     // No proxy - single entry with direct connection
     return [
       {
-        address: 'direct',
+        address: null,
         agent: makeAgent(),
         limiter: makeLimiter(),
         ongoing: 0,

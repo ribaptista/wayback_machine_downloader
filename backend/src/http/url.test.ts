@@ -86,66 +86,74 @@ describe('getPathParts', () => {
 
 describe('normalizeUrl', () => {
   it('strips https scheme', () => {
-    expect(normalizeUrl('https://example.com/foo')).toBe('example.com/foo');
+    expect(normalizeUrl('https://example.com/foo').toString()).toBe(
+      'example.com/foo',
+    );
   });
 
   it('strips http scheme', () => {
-    expect(normalizeUrl('http://example.com/page')).toBe('example.com/page');
+    expect(normalizeUrl('http://example.com/page').toString()).toBe(
+      'example.com/page',
+    );
   });
 
   it('strips port', () => {
-    expect(normalizeUrl('http://example.com:8080/path/to')).toBe(
+    expect(normalizeUrl('http://example.com:8080/path/to').toString()).toBe(
       'example.com/path/to',
     );
   });
 
   it('strips standard port 443', () => {
-    expect(normalizeUrl('https://example.com:443/foo')).toBe('example.com/foo');
+    expect(normalizeUrl('https://example.com:443/foo').toString()).toBe(
+      'example.com/foo',
+    );
   });
 
   it('removes trailing dot from host', () => {
-    expect(normalizeUrl('https://example.com./foo/bar')).toBe(
+    expect(normalizeUrl('https://example.com./foo/bar').toString()).toBe(
       'example.com/foo/bar',
     );
   });
 
   it('keeps deep path and query string', () => {
-    expect(normalizeUrl('https://example.com/foo/bar?baz=1&x=2')).toBe(
-      'example.com/foo/bar?baz=1&x=2',
-    );
+    expect(
+      normalizeUrl('https://example.com/foo/bar?baz=1&x=2').toString(),
+    ).toBe('example.com/foo/bar?baz=1&x=2');
   });
 
   it('query on root results in root path preserved', () => {
-    expect(normalizeUrl('https://example.com?q=hello')).toBe(
+    expect(normalizeUrl('https://example.com?q=hello').toString()).toBe(
       'example.com/?q=hello',
     );
   });
 
   it('strips port and removes trailing dot together', () => {
-    expect(normalizeUrl('http://example.com.:3000/api')).toBe(
+    expect(normalizeUrl('http://example.com.:3000/api').toString()).toBe(
       'example.com/api',
     );
   });
 
   it('strips www prefix', () => {
-    expect(normalizeUrl('https://www.example.com/foo')).toBe('example.com/foo');
+    expect(normalizeUrl('https://www.example.com/foo').toString()).toBe(
+      'example.com/foo',
+    );
   });
 
   it('strips www2 prefix', () => {
-    expect(normalizeUrl('https://www2.example.com/foo')).toBe(
+    expect(normalizeUrl('https://www2.example.com/foo').toString()).toBe(
       'example.com/foo',
     );
   });
 
   it('does not strip non-www subdomain', () => {
-    expect(normalizeUrl('https://blog.example.com/foo')).toBe(
+    expect(normalizeUrl('https://blog.example.com/foo').toString()).toBe(
       'blog.example.com/foo',
     );
   });
 
   it('localhost with port', () => {
-    expect(normalizeUrl('http://localhost:3000/api/v1?token=abc')).toBe(
-      'localhost/api/v1?token=abc',
-    );
+    expect(
+      normalizeUrl('http://localhost:3000/api/v1?token=abc').toString(),
+    ).toBe('localhost/api/v1?token=abc');
   });
 });

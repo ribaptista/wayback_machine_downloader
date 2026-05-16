@@ -3,7 +3,7 @@ import {
   getFileMatches,
   type SearchCondition,
   type FileMatches,
-} from '../../file_search';
+} from './file_search';
 import { toWorkerError, type WorkerError } from '../../worker/worker_utils';
 
 export interface WorkerRequest {

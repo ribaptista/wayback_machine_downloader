@@ -8,11 +8,35 @@ export function normalizeDomain(domain: string): string {
   return normalizeHost(domain);
 }
 
-export function normalizeUrl(url: string): string {
-  const parsed = new URL(url);
-  const host = normalizeHost(parsed.hostname);
-  const pathAndQuery = parsed.pathname + parsed.search;
-  return host + pathAndQuery;
+export class NormalizedUrl {
+  private readonly _domain: string;
+  private readonly _pathAndQuery: string;
+
+  constructor(url: string) {
+    const parsed = new URL(url);
+    this._domain = normalizeHost(parsed.hostname);
+    this._pathAndQuery = parsed.pathname + parsed.search;
+  }
+
+  getNormalizedDomain(): string {
+    return this._domain;
+  }
+
+  getPathAndQuery(): string {
+    return this._pathAndQuery;
+  }
+
+  toString(): string {
+    return this._domain + this._pathAndQuery;
+  }
+}
+
+export function equalsOrSubdomain(domain: string, ofDomain: string): boolean {
+  return domain === ofDomain || domain.endsWith('.' + ofDomain);
+}
+
+export function normalizeUrl(url: string): NormalizedUrl {
+  return new NormalizedUrl(url);
 }
 
 export function getPathParts(original: string): string[] {

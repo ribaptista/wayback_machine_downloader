@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { CdxRepository, ReplayCdxRow } from '../../cdx/repository';
 import { normalizeUrl } from '../../http/url';
-import { nestedIdPath } from '../../file/id-path';
+import { nestedIdPath } from '../../storage/id-path';
 
 function lookupCdxRow(
   cdxRepo: CdxRepository,
@@ -15,7 +15,7 @@ function lookupCdxRow(
 
   let normalizedOriginal: string;
   try {
-    normalizedOriginal = normalizeUrl(original);
+    normalizedOriginal = normalizeUrl(original).toString();
   } catch {
     console.error(`[lookup] could not normalize URL for fallback: ${original}`);
     return undefined;
