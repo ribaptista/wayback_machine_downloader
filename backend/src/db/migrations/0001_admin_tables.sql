@@ -20,10 +20,10 @@ CREATE TABLE `search_file` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
   `search_id` INTEGER NOT NULL REFERENCES search(id),
   `request_id` TEXT NOT NULL REFERENCES request(id),
-  `resource_version_url` TEXT,
-  `resource_version_timestamp` INTEGER,
+  `resource_version_url` TEXT NOT NULL,
+  `resource_version_timestamp` INTEGER NOT NULL,
   `match_count` INTEGER NOT NULL DEFAULT 0,
-  `context_digest` TEXT,
+  `context_digest` TEXT NOT NULL,
   `is_duplicate_context_digest` INTEGER NOT NULL DEFAULT 0,
   UNIQUE(`search_id`, `resource_version_url`, `resource_version_timestamp`)
 );
@@ -32,8 +32,8 @@ CREATE TABLE `search_file_error` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
   `search_id` INTEGER NOT NULL REFERENCES search(id),
   `request_id` TEXT NOT NULL REFERENCES request(id),
-  `resource_version_url` TEXT,
-  `resource_version_timestamp` INTEGER,
+  `resource_version_url` TEXT NOT NULL,
+  `resource_version_timestamp` INTEGER NOT NULL,
   `error_name` TEXT NOT NULL,
   `error_message` TEXT NOT NULL,
   UNIQUE(`search_id`, `resource_version_url`, `resource_version_timestamp`)

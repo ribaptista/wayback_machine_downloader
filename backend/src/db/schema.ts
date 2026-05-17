@@ -317,10 +317,10 @@ export const searchFile = sqliteTable(
     requestId: text('request_id')
       .notNull()
       .references(() => request.id),
-    resourceVersionUrl: text('resource_version_url'),
-    resourceVersionTimestamp: integer('resource_version_timestamp'),
+    resourceVersionUrl: text('resource_version_url').notNull(),
+    resourceVersionTimestamp: integer('resource_version_timestamp').notNull(),
     matchCount: integer('match_count').notNull().default(0),
-    contextDigest: text('context_digest'),
+    contextDigest: text('context_digest').notNull(),
     isDuplicateContextDigest: integer('is_duplicate_context_digest')
       .notNull()
       .default(0),
@@ -345,8 +345,8 @@ export const searchFileError = sqliteTable(
     requestId: text('request_id')
       .notNull()
       .references(() => request.id),
-    resourceVersionUrl: text('resource_version_url'),
-    resourceVersionTimestamp: integer('resource_version_timestamp'),
+    resourceVersionUrl: text('resource_version_url').notNull(),
+    resourceVersionTimestamp: integer('resource_version_timestamp').notNull(),
     errorName: text('error_name').notNull(),
     errorMessage: text('error_message').notNull(),
   },

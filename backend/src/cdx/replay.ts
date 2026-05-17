@@ -1,5 +1,5 @@
 import { IncomingHttpHeaders } from '../http/types';
-import { normalizeUrl } from '../http/url';
+import { normalizeUrl } from '../http/normalized_url';
 
 export class NonReplayResponseError extends Error {
   constructor() {

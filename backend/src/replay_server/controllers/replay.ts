@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { CdxRepository, ReplayCdxRow } from '../../cdx/repository';
-import { normalizeUrl } from '../../http/url';
+import { normalizeUrl } from '../../http/normalized_url';
 import { buildAssetPath } from '../../request/paths';
 
 function lookupCdxRow(
@@ -93,9 +93,9 @@ export function registerReplayRoutes(
       let data: Buffer;
       try {
         data = fs.readFileSync(filePath);
-      } catch {
-        console.error(`[replay] 404 file not found: ${filePath}`);
-        return reply.code(404).send('Not found');
+      } catch (error) {
+        console.error(`[replay] 500 could not read file: ${filePath}`, error);
+        return reply.code(500).send('Could not retrieve asset');
       }
 
       return reply.type(row.mimetype).send(data);

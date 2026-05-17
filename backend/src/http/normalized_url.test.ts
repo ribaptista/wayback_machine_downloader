@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getPathParts, normalizeUrl } from './url';
+import { getPathParts, normalizeUrl } from './normalized_url';
 
 describe('getPathParts', () => {
   it('single path segment', () => {

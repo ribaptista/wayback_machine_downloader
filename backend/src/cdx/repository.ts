@@ -1,5 +1,5 @@
 import type { Database as DB } from 'better-sqlite3';
-import { getPathParts } from '../http/url';
+import { getPathParts } from '../http/normalized_url';
 
 // ── Domain ────────────────────────────────────────────────────────────────────
 

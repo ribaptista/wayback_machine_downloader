@@ -1,6 +1,6 @@
 import { fetch } from 'undici';
 import type { DB } from '../db/conn';
-import { normalizeUrl, normalizeDomain } from '../http/url';
+import { normalizeUrl, normalizeDomain } from '../http/normalized_url';
 import { WaybackCdxStrategy } from './sync_strategy/cdx-strategy-wayback';
 import { PywbCdxStrategy } from './sync_strategy/cdx-strategy-pywb';
 import { CdxRepository } from './repository';

@@ -1,4 +1,4 @@
-import { getPathParts } from '../http/url';
+import { getPathParts } from '../http/normalized_url';
 import { CdxRepository } from './repository';
 
 const PAGE_SIZE = 100;

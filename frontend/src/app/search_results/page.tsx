@@ -34,7 +34,7 @@ interface Domain {
   name: string;
 }
 
-interface FileResult {
+type FileResult = {
   id: number;
   request_id: string;
   resource_version_url: string;
@@ -42,12 +42,8 @@ interface FileResult {
   body_digest: string;
   match_count: number;
   duplicate_count: number;
-  context_digest: string | null;
-  original: string;
-  timestamp: string;
-  fileError: string | null;
-  contextWindows: ContextWindow[];
-}
+  context_digest: string;
+} & ({ fileError: string } | { contextWindows: ContextWindow[] });
 
 interface SearchResultsData {
   search: SearchInfo;
@@ -404,12 +400,10 @@ function SearchResultsInner() {
                   bodyDigest={file.body_digest}
                   resourceVersionUrl={file.resource_version_url}
                   resourceVersionTimestamp={file.resource_version_timestamp}
-                  original={file.original}
-                  timestamp={file.timestamp}
                   matchCount={file.match_count}
                   duplicateCount={!similarTo && !filterReactionTypeIds.length ? file.duplicate_count : undefined}
-                  contextWindows={file.contextWindows}
-                  fileError={file.fileError}
+                  contextWindows={'contextWindows' in file ? file.contextWindows : undefined}
+                  fileError={'fileError' in file ? file.fileError : undefined}
                   reactionTypes={data.reactionTypes}
                   activeReactions={activeReactions}
                   onToggleReaction={toggleReaction}

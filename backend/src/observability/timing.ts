@@ -12,3 +12,12 @@ export function aggregateStats(durations: number[]): AggregatedStats {
   const avg = count ? Math.round(total / count) : 0;
   return { count, total, avg, max };
 }
+
+export function withTimingLog(prefix: string) {
+  return function t<T>(label: string, fn: () => T): T {
+    const start = Date.now();
+    const result = fn();
+    console.log(`[${prefix}] ${label}: ${Date.now() - start}ms`);
+    return result;
+  };
+}

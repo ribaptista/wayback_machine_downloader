@@ -70,12 +70,10 @@ export interface FileResultCardProps {
   bodyDigest: string;
   resourceVersionUrl: string;
   resourceVersionTimestamp: number;
-  original: string;
-  timestamp: string;
   matchCount?: number;
   duplicateCount?: number;
   contextWindows?: ContextWindow[];
-  fileError?: string | null;
+  fileError?: string;
   reactionTypes: ReactionType[];
   activeReactions: Set<string>;
   onToggleReaction: (url: string, timestamp: number, reactionTypeId: number) => void;
@@ -88,8 +86,6 @@ export function FileResultCard({
   bodyDigest,
   resourceVersionUrl,
   resourceVersionTimestamp,
-  original,
-  timestamp,
   matchCount,
   duplicateCount,
   contextWindows,
@@ -110,11 +106,11 @@ export function FileResultCard({
             <div className="mb-2">
               <a
                 className="font-semibold break-all text-primary underline"
-                href={`${REPLAY_SERVER_URL}/replay/${timestamp}/${original}`}
+                href={`${REPLAY_SERVER_URL}/replay/${resourceVersionTimestamp}/${resourceVersionUrl}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {original}
+                {resourceVersionUrl}
               </a>
               {onSimilarClick && (duplicateCount ?? 0) > 1 && (
                 <button
@@ -125,7 +121,7 @@ export function FileResultCard({
                 </button>
               )}
               <div className="text-muted-foreground text-xs mt-1">
-                {formatTimestamp(String(timestamp))}
+                {formatTimestamp(String(resourceVersionTimestamp))}
                 {matchCount !== undefined && (
                   <> — {matchCount} match{matchCount !== 1 ? "es" : ""}</>
                 )}
@@ -151,9 +147,9 @@ export function FileResultCard({
                 <strong>Data error:</strong> {fileError}
               </p>
             )}
-            {(contextWindows ?? []).length > 0 && (
+            {contextWindows && contextWindows.length > 0 && (
               <ul className="space-y-1">
-                {(contextWindows ?? []).map((win, i) => (
+                {contextWindows.map((win, i) => (
                   <li key={i} className="text-sm whitespace-pre-wrap break-all">
                     {highlightContext(win)}
                   </li>

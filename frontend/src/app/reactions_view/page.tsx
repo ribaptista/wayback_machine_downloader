@@ -15,8 +15,6 @@ interface ReactionsViewFile {
   resource_version_url: string;
   resource_version_timestamp: number;
   request_id: string;
-  original: string;
-  timestamp: string;
 }
 
 interface ReactionsViewData {
@@ -211,8 +209,6 @@ function ReactionsViewInner() {
                 bodyDigest=""
                 resourceVersionUrl={file.resource_version_url}
                 resourceVersionTimestamp={file.resource_version_timestamp}
-                original={file.original}
-                timestamp={file.timestamp}
                 reactionTypes={reactionTypes}
                 activeReactions={activeReactions}
                 onToggleReaction={toggleReaction}

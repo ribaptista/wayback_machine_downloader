@@ -4,9 +4,9 @@ import { workerData } from 'worker_threads';
 import type { SearchCondition, SearchMetadata } from '../types';
 import type {
   WorkerRequest,
-  WorkerSuccess,
+  FileSearchSuccessfulResult,
 } from '../file_search_worker/file_search_worker';
-import { NodeWorkerError } from '../../worker/error';
+import { NodeWorkerError, PlainNonFatalWorkerError } from '../../worker/error';
 import { workerMain, isMainThread } from '../../worker/worker_utils';
 import { WorkerPool } from '../../worker/worker_pool';
 import { buildAssetPath } from '../../request/paths';
@@ -22,7 +22,7 @@ export interface SearchScanRequest {
   total: number;
 }
 
-export type SearchScanResponse = { success: true } | { error: string };
+export type SearchScanResponse = { success: true } | PlainNonFatalWorkerError;
 
 interface SearchScanWorkerData {
   dbPath: string;
@@ -67,7 +67,10 @@ async function runFileSearchWorker(
   const filePath = buildAssetPath(baseFolder, candidate.body_digest) + '.text';
   const matchStart = Date.now();
   try {
-    const response = await pool.queue<WorkerRequest, WorkerSuccess>({
+    const response = await pool.queue<
+      WorkerRequest,
+      FileSearchSuccessfulResult
+    >({
       filePath,
       conditions,
     });
@@ -169,7 +172,9 @@ async function processNextCandidatesPage(
   };
 }
 
-async function runSearchScan(req: SearchScanRequest): Promise<void> {
+async function runSearchScan(
+  req: SearchScanRequest,
+): Promise<{ success: true }> {
   const { searchMetadata, baseFolder, total } = req;
   const { searchId, domainNames, conditions } = searchMetadata;
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -188,8 +193,9 @@ async function runSearchScan(req: SearchScanRequest): Promise<void> {
     );
     if (cursor === undefined) break;
   }
+  return { success: true };
 }
 
 if (!isMainThread) {
-  workerMain<SearchScanRequest>(runSearchScan);
+  workerMain<SearchScanRequest, { success: true }>(runSearchScan);
 }

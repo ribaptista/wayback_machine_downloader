@@ -7,6 +7,7 @@ import type {
 import { SearchRepository } from './repository';
 import { CdxRepository } from '../cdx/repository';
 import { WorkerPool } from '../worker/worker_pool';
+import { isPlainNonFatalWorkerError } from '../worker/error';
 
 export function createSearchWorkerPool(
   dbPath: string,
@@ -29,8 +30,8 @@ function runSearchWorker(
   pool
     .queue<SearchScanRequest, SearchScanResponse>(scanRequest)
     .then((response) => {
-      if ('error' in response) {
-        searchRepo.setSearchError(response.error, searchId);
+      if (isPlainNonFatalWorkerError(response)) {
+        searchRepo.setSearchError(response.message, searchId);
       } else {
         searchRepo.setSearchStatus('done', searchId);
       }

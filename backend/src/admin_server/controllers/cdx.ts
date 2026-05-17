@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { CdxRepository } from '../../cdx/repository';
 import { getResourcesData } from '../../cdx/resource_tree';
 import { getListVersionsData } from '../../cdx/resource_versions';
-import { normalizeUrl } from '../../http/url';
+import { normalizeUrl } from '../../http/normalized_url';
 
 export function registerCdxRoutes(
   fastify: FastifyInstance,

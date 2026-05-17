@@ -57,7 +57,7 @@ export interface SearchFileRow {
   body_digest: string;
   match_count: number;
   duplicate_count: number;
-  context_digest: string | null;
+  context_digest: string;
   resource_version_url: string;
   resource_version_timestamp: number;
 }
@@ -95,12 +95,13 @@ export interface SimilarGroupReactionRow {
 
 export interface SearchFilesFilter {
   searchId: number;
-  similarTo?: string;
   domainFilter?: string[];
   conditionFilter?: number[];
   reactionFilter?: number[];
   cursor?: { timestamp: number; requestId: string };
 }
+
+const RESULTS_PAGE_SIZE = 10;
 
 export interface HtmlCandidateRow {
   resource_version_url: string;
@@ -281,14 +282,8 @@ export class SearchRepository {
 
   // ── Search file ───────────────────────────────────────────────────────────────
 
-  countFiles(filter: SearchFilesFilter): number {
-    const {
-      searchId,
-      similarTo,
-      domainFilter,
-      conditionFilter,
-      reactionFilter,
-    } = filter;
+  countResultFiles(filter: Omit<SearchFilesFilter, 'cursor'>): number {
+    const { searchId, domainFilter, conditionFilter, reactionFilter } = filter;
     const {
       domainExistsWhere,
       conditionExistsWhere,
@@ -297,25 +292,6 @@ export class SearchRepository {
       conditionParams,
       reactionParams,
     } = buildFilterClauses(domainFilter, conditionFilter, reactionFilter);
-
-    if (similarTo) {
-      const row = this.db
-        .prepare<unknown[], { count: number }>(
-          `SELECT COUNT(*) AS count
-           FROM search_file sf
-           INNER JOIN request r ON r.id = sf.request_id
-           WHERE sf.search_id = ? AND sf.context_digest = ?
-           ${domainExistsWhere} ${conditionExistsWhere} ${reactionExistsWhere}`,
-        )
-        .get(
-          searchId,
-          similarTo,
-          ...domainParams,
-          ...conditionParams,
-          ...reactionParams,
-        );
-      return row?.count ?? 0;
-    }
 
     const row = this.db
       .prepare<unknown[], { count: number }>(
@@ -330,15 +306,42 @@ export class SearchRepository {
     return row?.count ?? 0;
   }
 
-  findFilesPage(filter: SearchFilesFilter): SearchFileRow[] {
+  countResultsWithContextDigest(
+    searchId: number,
+    similarTo: string,
+    filter: Omit<SearchFilesFilter, 'searchId' | 'cursor'>,
+  ): number {
+    const { domainFilter, conditionFilter, reactionFilter } = filter;
     const {
-      searchId,
-      similarTo,
-      domainFilter,
-      conditionFilter,
-      reactionFilter,
-      cursor,
-    } = filter;
+      domainExistsWhere,
+      conditionExistsWhere,
+      reactionExistsWhere,
+      domainParams,
+      conditionParams,
+      reactionParams,
+    } = buildFilterClauses(domainFilter, conditionFilter, reactionFilter);
+
+    const row = this.db
+      .prepare<unknown[], { count: number }>(
+        `SELECT COUNT(*) AS count
+         FROM search_file sf
+         INNER JOIN request r ON r.id = sf.request_id
+         WHERE sf.search_id = ? AND sf.context_digest = ?
+         ${domainExistsWhere} ${conditionExistsWhere} ${reactionExistsWhere}`,
+      )
+      .get(
+        searchId,
+        similarTo,
+        ...domainParams,
+        ...conditionParams,
+        ...reactionParams,
+      );
+    return row?.count ?? 0;
+  }
+
+  findResultFilesPage(filter: SearchFilesFilter): SearchFileRow[] {
+    const { searchId, domainFilter, conditionFilter, reactionFilter, cursor } =
+      filter;
     const {
       domainExistsWhere,
       conditionExistsWhere,
@@ -355,38 +358,6 @@ export class SearchRepository {
     const cursorParams: (number | string)[] = hasCursor
       ? [cursor!.timestamp, cursor!.requestId]
       : [];
-
-    const RESULTS_PAGE_SIZE = 10;
-
-    if (similarTo) {
-      return this.db
-        .prepare<unknown[], SearchFileRow>(
-          `SELECT sf.id,
-                  sf.request_id,
-                  r.body_digest,
-                  sf.match_count,
-                  1 AS duplicate_count,
-                  sf.context_digest,
-                  sf.resource_version_url,
-                  r.resource_version_timestamp
-           FROM search_file sf
-           INNER JOIN request r ON r.id = sf.request_id
-           WHERE sf.search_id = ? AND sf.context_digest = ?
-           ${domainExistsWhere} ${conditionExistsWhere} ${reactionExistsWhere}
-           ${cursorWhere}
-           ORDER BY r.resource_version_timestamp DESC, sf.request_id DESC
-           LIMIT ?`,
-        )
-        .all(
-          searchId,
-          similarTo,
-          ...domainParams,
-          ...conditionParams,
-          ...reactionParams,
-          ...cursorParams,
-          RESULTS_PAGE_SIZE,
-        );
-    }
 
     const hasReactionFilter = (reactionFilter?.length ?? 0) > 0;
     const duplicateCountExpr = hasReactionFilter
@@ -418,6 +389,58 @@ export class SearchRepository {
       .all(
         ...(hasReactionFilter ? [] : [searchId]),
         searchId,
+        ...domainParams,
+        ...conditionParams,
+        ...reactionParams,
+        ...cursorParams,
+        RESULTS_PAGE_SIZE,
+      );
+  }
+
+  findResultsWithContextDigestPage(
+    searchId: number,
+    contextDigest: string,
+    filter: Omit<SearchFilesFilter, 'searchId'>,
+  ): SearchFileRow[] {
+    const { domainFilter, conditionFilter, reactionFilter, cursor } = filter;
+    const {
+      domainExistsWhere,
+      conditionExistsWhere,
+      reactionExistsWhere,
+      domainParams,
+      conditionParams,
+      reactionParams,
+    } = buildFilterClauses(domainFilter, conditionFilter, reactionFilter);
+
+    const hasCursor = cursor !== undefined;
+    const cursorWhere = hasCursor
+      ? `AND (r.resource_version_timestamp, sf.request_id) < (?, ?)`
+      : '';
+    const cursorParams: (number | string)[] = hasCursor
+      ? [cursor!.timestamp, cursor!.requestId]
+      : [];
+
+    return this.db
+      .prepare<unknown[], SearchFileRow>(
+        `SELECT sf.id,
+                sf.request_id,
+                r.body_digest,
+                sf.match_count,
+                1 AS duplicate_count,
+                sf.context_digest,
+                sf.resource_version_url,
+                r.resource_version_timestamp
+         FROM search_file sf
+         INNER JOIN request r ON r.id = sf.request_id
+         WHERE sf.search_id = ? AND sf.context_digest = ?
+         ${domainExistsWhere} ${conditionExistsWhere} ${reactionExistsWhere}
+         ${cursorWhere}
+         ORDER BY r.resource_version_timestamp DESC, sf.request_id DESC
+         LIMIT ?`,
+      )
+      .all(
+        searchId,
+        contextDigest,
         ...domainParams,
         ...conditionParams,
         ...reactionParams,
@@ -487,7 +510,7 @@ export class SearchRepository {
     domainFilter?: string[];
     conditionFilter?: number[];
     reactionFilter?: number[];
-  }): ConditionCountRow[] {
+  }): Record<number, number> {
     const { searchId, domainFilter, conditionFilter, reactionFilter } = params;
     const { domainExistsWhere, reactionExistsWhere } = buildFilterClauses(
       domainFilter,
@@ -517,14 +540,18 @@ export class SearchRepository {
          ${reactionExistsWhere}
          GROUP BY sm.search_condition_id`,
       )
-      .all(...allParams);
+      .all(...allParams)
+      .reduce<Record<number, number>>((acc, row) => {
+        acc[row.search_condition_id] = row.count;
+        return acc;
+      }, {});
   }
 
   countByReactionType(params: {
     searchId: number;
     domainFilter?: string[];
     conditionFilter?: number[];
-  }): ReactionCountRow[] {
+  }): Record<number, number> {
     const { searchId, domainFilter, conditionFilter } = params;
     const { domainExistsWhere, conditionExistsWhere } = buildFilterClauses(
       domainFilter,
@@ -548,7 +575,11 @@ export class SearchRepository {
          ${domainExistsWhere} ${conditionExistsWhere}
          GROUP BY rx.reaction_type_id`,
       )
-      .all(...baseParams);
+      .all(...baseParams)
+      .reduce<Record<number, number>>((acc, row) => {
+        acc[row.reaction_type_id] = row.count;
+        return acc;
+      }, {});
   }
 
   findSimilarGroupReactions(

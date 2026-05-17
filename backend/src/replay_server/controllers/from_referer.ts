@@ -13,16 +13,19 @@ export function registerFromRefererRoutes(
     async (request, reply) => {
       const original = request.params['*'];
       const referer = request.headers['referer'];
+
       if (!referer) {
         console.error('[replay] 404 from_referer: no Referer header');
         return reply.code(404).send('Not found');
       }
+
       if (!referer.startsWith(replayPrefix)) {
         console.error(
           `[replay] 404 from_referer: ${request.url} Referer does not match replay pattern: ${referer}`,
         );
         return reply.code(404).send('Not found');
       }
+
       const refMatch = referer.slice(replayPrefix.length).match(replayPathRe);
       if (!refMatch) {
         console.error(
@@ -30,6 +33,7 @@ export function registerFromRefererRoutes(
         );
         return reply.code(404).send('Not found');
       }
+
       const timestamp = refMatch[1];
       const redirectUrl = `${replayBaseUrl}/replay/${timestamp}/${original}`;
       console.error(`[replay] 302 from_referer: ${original} → ${redirectUrl}`);

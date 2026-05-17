@@ -7,7 +7,7 @@ import {
   RequestMetadata,
 } from '../http/agent_pool';
 import { BodyParser } from '../http/body_parser';
-import { equalsOrSubdomain } from '../http/url';
+import { equalsOrSubdomain } from '../http/normalized_url';
 import { RedirectAwareClient } from '../http/redirect/redirect_client';
 import { RequestRepository } from './repository';
 import { ReplayServer, ParsedReplayUrl } from '../cdx/replay';
