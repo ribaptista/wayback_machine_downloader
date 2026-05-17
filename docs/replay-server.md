@@ -30,10 +30,10 @@ npx tsx src/replay_server/server.ts --data-folder /path/to/data
 
 ## Options
 
-| Argument               | Default                  | Description |
-| ---------------------- | ------------------------ | ----------- |
-| `--data-folder`, `-b`  | —                        | **Required.** Same folder as the CLI. |
-| `--admin-url`          | `http://localhost:3000`  | Used only for cross-link defaults. |
+| Argument              | Default                 | Description                           |
+| --------------------- | ----------------------- | ------------------------------------- |
+| `--data-folder`, `-b` | —                       | **Required.** Same folder as the CLI. |
+| `--admin-url`         | `http://localhost:3000` | Used only for cross-link defaults.    |
 
 ## How replay URLs work
 
@@ -84,12 +84,12 @@ timestamp — they inherit it from the page that linked to them.
 
 ## Relationship between components
 
-| Component         | Role in replay                                                |
-| ----------------- | ------------------------------------------------------------- |
-| Replay server     | Serves bytes for `/replay/<ts>/<url>`. Resolves `from_referer`. |
-| Chrome extension  | Rewrites all `localhost`-initiated traffic to the replay server, except for allowed origins. Without it, archived pages will reach for the live web. |
-| Admin frontend    | Provides links into the replay server and offers per-page version lists. |
-| Admin server      | Not used directly during replay. |
+| Component        | Role in replay                                                                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Replay server    | Serves bytes for `/replay/<ts>/<url>`. Resolves `from_referer`.                                                                                      |
+| Chrome extension | Rewrites all `localhost`-initiated traffic to the replay server, except for allowed origins. Without it, archived pages will reach for the live web. |
+| Admin frontend   | Provides links into the replay server and offers per-page version lists.                                                                             |
+| Admin server     | Not used directly during replay.                                                                                                                     |
 
 You **need** both the replay server and the Chrome extension for replay
 to work correctly.

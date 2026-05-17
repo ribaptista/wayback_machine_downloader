@@ -18,12 +18,12 @@ That's it for the minimum. Everything else has sensible defaults.
 
 Defined in [backend/src/config.ts](../backend/src/config.ts):
 
-| Constant                | Value     |
-| ----------------------- | --------- |
-| `APP_HOST`              | localhost |
-| `ADMIN_FRONTEND_PORT`   | 3000      |
-| `ADMIN_BACKEND_PORT`    | 5050      |
-| `REPLAY_SERVER_PORT`    | 5051      |
+| Constant              | Value     |
+| --------------------- | --------- |
+| `APP_HOST`            | localhost |
+| `ADMIN_FRONTEND_PORT` | 3000      |
+| `ADMIN_BACKEND_PORT`  | 5050      |
+| `REPLAY_SERVER_PORT`  | 5051      |
 
 These are referenced consistently by:
 
@@ -42,18 +42,18 @@ Changing them is currently a code edit, not a runtime flag — see
 The Next.js dev server proxies `/api/*` to the admin server. The target URL
 can be overridden:
 
-| Variable      | Default                  | Used by             |
-| ------------- | ------------------------ | ------------------- |
-| `BACKEND_URL` | `http://localhost:5050`  | [frontend/next.config.ts](../frontend/next.config.ts) |
+| Variable      | Default                 | Used by                                               |
+| ------------- | ----------------------- | ----------------------------------------------------- |
+| `BACKEND_URL` | `http://localhost:5050` | [frontend/next.config.ts](../frontend/next.config.ts) |
 
 ### Replay server URL exposed to the browser
 
 A few admin frontend pages link directly to the replay server (e.g. the
 "open" link on a version). They read this:
 
-| Variable                       | Default                  |
-| ------------------------------ | ------------------------ |
-| `NEXT_PUBLIC_REPLAY_SERVER_URL`| `http://localhost:5051`  |
+| Variable                        | Default                 |
+| ------------------------------- | ----------------------- |
+| `NEXT_PUBLIC_REPLAY_SERVER_URL` | `http://localhost:5051` |
 
 ## CLI options
 

@@ -2,12 +2,12 @@
 
 ## Prerequisites
 
-| Requirement     | Version       | Notes                                          |
-| --------------- | ------------- | ---------------------------------------------- |
-| Node.js         | ≥ 22          | Backend uses `tsx` to run TypeScript directly  |
-| npm             | bundled       |                                                |
-| Google Chrome   | recent stable | Required for replay browsing (extension is MV3)|
-| Disk space      | varies        | Plan for the total size of assets you'll fetch |
+| Requirement   | Version       | Notes                                           |
+| ------------- | ------------- | ----------------------------------------------- |
+| Node.js       | ≥ 22          | Backend uses `tsx` to run TypeScript directly   |
+| npm           | bundled       |                                                 |
+| Google Chrome | recent stable | Required for replay browsing (extension is MV3) |
+| Disk space    | varies        | Plan for the total size of assets you'll fetch  |
 
 The system is tested on Linux and macOS. Windows users should run via WSL.
 

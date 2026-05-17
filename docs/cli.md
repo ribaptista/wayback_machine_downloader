@@ -24,34 +24,34 @@ npm start -- \
 
 ## Required arguments
 
-| Argument           | Description |
-| ------------------ | ----------- |
-| `--data-folder`, `-b` | Folder containing the SQLite DB and asset blobs. |
-| `--domain <name>`<br>or `--all` | Target one or more domains, or replay every domain already in the database. Mutually exclusive. |
-| `--max-req-per-second N`<br>or `--max-req-per-minute N` | Per-proxy rate limit. Required for live runs; ignored with `--dry-run`. Mutually exclusive. |
+| Argument                                                | Description                                                                                     |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `--data-folder`, `-b`                                   | Folder containing the SQLite DB and asset blobs.                                                |
+| `--domain <name>`<br>or `--all`                         | Target one or more domains, or replay every domain already in the database. Mutually exclusive. |
+| `--max-req-per-second N`<br>or `--max-req-per-minute N` | Per-proxy rate limit. Required for live runs; ignored with `--dry-run`. Mutually exclusive.     |
 
 `--domain` can be repeated: `--domain a.com --domain b.com`.
 
 ## Common arguments
 
-| Argument            | Default | Description |
-| ------------------- | ------- | ----------- |
-| `--concurrency N`   | 5       | Max simultaneous downloads. |
-| `--proxy-file FILE` | none    | One proxy per line. See [proxies](#proxies). |
-| `--cdx-page-size N` | 128     | CDX result page size. |
-| `--skip-cdx-sync`   | false   | Skip the CDX fetch step and only retry pending/failed entries. |
-| `--dry-run`         | false   | Show what would be done without downloading. |
-| `--verbose`, `-v`   | false   | With `--dry-run`, list individual entries. |
-| `--skip-error CODE` | —       | Treat the given error code as success (repeatable). |
-| `--skip-error-message STR` | — | Treat any error containing this substring as success (repeatable). |
+| Argument                   | Default | Description                                                        |
+| -------------------------- | ------- | ------------------------------------------------------------------ |
+| `--concurrency N`          | 5       | Max simultaneous downloads.                                        |
+| `--proxy-file FILE`        | none    | One proxy per line. See [proxies](#proxies).                       |
+| `--cdx-page-size N`        | 128     | CDX result page size.                                              |
+| `--skip-cdx-sync`          | false   | Skip the CDX fetch step and only retry pending/failed entries.     |
+| `--dry-run`                | false   | Show what would be done without downloading.                       |
+| `--verbose`, `-v`          | false   | With `--dry-run`, list individual entries.                         |
+| `--skip-error CODE`        | —       | Treat the given error code as success (repeatable).                |
+| `--skip-error-message STR` | —       | Treat any error containing this substring as success (repeatable). |
 
 ## CDX source arguments
 
-| Argument            | Default                                                | Description |
-| ------------------- | ------------------------------------------------------ | ----------- |
-| `--cdx-base-url URL`| `http://web.archive.org/cdx/search/cdx`                | Where to query CDX. |
-| `--cdx-strategy`    | `json_wayback`                                         | `json_wayback` (Wayback resumeKey pagination) or `json_pywb` (pywb single-page jsonlines). |
-| `--replay-base-url URL` | `https://web.archive.org/web/`                     | Recorded with each entry; used to construct the `x-remote-live-replay-url` header during replay. |
+| Argument                | Default                                 | Description                                                                                      |
+| ----------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `--cdx-base-url URL`    | `http://web.archive.org/cdx/search/cdx` | Where to query CDX.                                                                              |
+| `--cdx-strategy`        | `json_wayback`                          | `json_wayback` (Wayback resumeKey pagination) or `json_pywb` (pywb single-page jsonlines).       |
+| `--replay-base-url URL` | `https://web.archive.org/web/`          | Recorded with each entry; used to construct the `x-remote-live-replay-url` header during replay. |
 
 ## Examples
 

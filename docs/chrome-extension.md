@@ -71,8 +71,8 @@ The extension reads the following constants at the top of
 ```js
 const APP_HOST = 'localhost';
 const ADMIN_FRONTEND_ORIGIN = `http://${APP_HOST}:3000`;
-const ADMIN_BACKEND_ORIGIN  = `http://${APP_HOST}:5050`;
-const REPLAY_SERVER_ORIGIN  = `http://${APP_HOST}:5051`;
+const ADMIN_BACKEND_ORIGIN = `http://${APP_HOST}:5050`;
+const REPLAY_SERVER_ORIGIN = `http://${APP_HOST}:5051`;
 ```
 
 If you changed any port or host in [backend/src/config.ts](../backend/src/config.ts),

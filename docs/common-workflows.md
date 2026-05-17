@@ -96,10 +96,10 @@ with:
 npx tsx src/admin_server/index.ts -b ~/wab-data -s 4 -w 32 --context-size 96
 ```
 
-| Flag        | Effect |
-| ----------- | ------ |
-| `-s 4`      | Up to 4 searches in parallel. |
-| `-w 32`     | 32 file-scan workers per search. |
+| Flag                | Effect                                   |
+| ------------------- | ---------------------------------------- |
+| `-s 4`              | Up to 4 searches in parallel.            |
+| `-w 32`             | 32 file-scan workers per search.         |
 | `--context-size 96` | Larger context window around each match. |
 
 ## Migrate the data folder

@@ -35,13 +35,13 @@ flowchart LR
   Ext -.->|rewrites browsing to| Replay
 ```
 
-| Component       | What it is                          | Default URL              |
-| --------------- | ----------------------------------- | ------------------------ |
-| CLI downloader  | Long-running command that fetches CDX entries and downloads assets | — (terminal)        |
-| Admin server    | Fastify HTTP API over the database  | http://localhost:5050    |
-| Admin frontend  | Next.js UI for the admin server     | http://localhost:3000    |
-| Replay server   | Serves archived assets back as HTTP | http://localhost:5051    |
-| Chrome extension| Rewrites browsing to the replay server, adds replay context menus | — (browser)         |
+| Component        | What it is                                                         | Default URL           |
+| ---------------- | ------------------------------------------------------------------ | --------------------- |
+| CLI downloader   | Long-running command that fetches CDX entries and downloads assets | — (terminal)          |
+| Admin server     | Fastify HTTP API over the database                                 | http://localhost:5050 |
+| Admin frontend   | Next.js UI for the admin server                                    | http://localhost:3000 |
+| Replay server    | Serves archived assets back as HTTP                                | http://localhost:5051 |
+| Chrome extension | Rewrites browsing to the replay server, adds replay context menus  | — (browser)           |
 
 All components share a single **data folder** containing the SQLite database
 and the downloaded asset files.
