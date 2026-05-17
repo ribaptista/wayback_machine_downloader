@@ -89,16 +89,7 @@ export interface ReplayCdxRow {
   terminal_original: string;
   location_original: string | null;
   location_timestamp: number | null;
-}
-
-export interface ReplayCdxRow {
-  timestamp: number;
-  mimetype: string;
-  body_digest: string;
-  domain: string;
-  terminal_original: string;
-  location_original: string | null;
-  location_timestamp: number | null;
+  remote_live_replay_url: string | null;
 }
 
 export interface PendingCountRow {
@@ -713,7 +704,8 @@ export class CdxRepository {
     return this.db
       .prepare<[string, number], ReplayCdxRow>(
         `SELECT rv.timestamp, r.mimetype, r.body_digest, rvs.domain_name AS domain,
-                rv.url AS terminal_original, r.location_original, r.location_timestamp
+                rv.url AS terminal_original, r.location_original, r.location_timestamp,
+                r.remote_live_replay_url
          FROM resource_version rv
          JOIN request r ON r.id = rv.successful_request_id
          JOIN resource_version_source rvs ON rvs.url = rv.url AND rvs.timestamp = rv.timestamp
@@ -732,7 +724,8 @@ export class CdxRepository {
     return this.db
       .prepare<[string, number], ReplayCdxRow>(
         `SELECT rv.timestamp, r.mimetype, r.body_digest, rvs.domain_name AS domain,
-                rv.url AS terminal_original, r.location_original, r.location_timestamp
+                rv.url AS terminal_original, r.location_original, r.location_timestamp,
+                r.remote_live_replay_url
          FROM resource r2
          JOIN resource_version rv ON rv.url = r2.url
          JOIN request r ON r.id = rv.successful_request_id

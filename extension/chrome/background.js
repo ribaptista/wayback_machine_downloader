@@ -1,3 +1,8 @@
+const APP_HOST = 'localhost';
+const ADMIN_FRONTEND_ORIGIN = `http://${APP_HOST}:3000`;
+const ADMIN_BACKEND_ORIGIN = `http://${APP_HOST}:5050`;
+const REPLAY_SERVER_ORIGIN = `http://${APP_HOST}:5051`;
+
 const ALL_RESOURCE_TYPES = [
   'main_frame',
   'sub_frame',
@@ -16,81 +21,101 @@ const ALL_RESOURCE_TYPES = [
 
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    if (details.initiator !== 'http://localhost:3000') return;
+    if (details.initiator !== ADMIN_FRONTEND_ORIGIN) return;
     console.log(`[${details.type}] ${details.method} ${details.url}`);
   },
   { urls: ['<all_urls>'] },
 );
 
-const REPLAY_URL_RE = /^http:\/\/localhost:5051\/replay\/(\d+)\/(.+)$/;
+const REPLAY_URL_RE = new RegExp(`^${REPLAY_SERVER_ORIGIN}/replay/(\\d+)/(.+)$`);
 const MENU_ID = 'open-list-versions';
-const MENU_ID_WAYBACK = 'open-wayback-official';
+const MENU_ID_REMOTE_REPLAY = 'open-remote-replay';
+
+/** Maps tabId -> remote live replay URL from x-remote-live-replay-url response header */
+const remoteLiveReplayUrlByTab = new Map();
+
+chrome.webRequest.onHeadersReceived.addListener(
+  (details) => {
+    const header = details.responseHeaders?.find(
+      (h) => h.name.toLowerCase() === 'x-remote-live-replay-url',
+    );
+    if (header?.value) {
+      remoteLiveReplayUrlByTab.set(details.tabId, header.value);
+    }
+  },
+  { urls: [`${REPLAY_SERVER_ORIGIN}/replay/*/*`] },
+  ['responseHeaders'],
+);
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  remoteLiveReplayUrlByTab.delete(tabId);
+});
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: MENU_ID,
     title: 'List versions',
     contexts: ['page'],
-    documentUrlPatterns: ['http://localhost:5051/replay/*/*'],
+    documentUrlPatterns: [`${REPLAY_SERVER_ORIGIN}/replay/*/*`],
   });
   chrome.contextMenus.create({
-    id: MENU_ID_WAYBACK,
-    title: 'Open in Wayback Machine',
+    id: MENU_ID_REMOTE_REPLAY,
+    title: 'Open in Remote Replay',
     contexts: ['page'],
-    documentUrlPatterns: ['http://localhost:5051/replay/*/*'],
+    documentUrlPatterns: [`${REPLAY_SERVER_ORIGIN}/replay/*/*`],
   });
 
   chrome.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: [1, 2, 3, 4],
     addRules: [
       {
-        // Priority 2: already going to the replay route — let it through
+        // Priority 2: already going to one of our servers (admin frontend/backend or replay server) — allow
         id: 1,
         priority: 2,
         condition: {
-          regexFilter: 'http://localhost:(3000|5050|5051)/.*',
-          initiatorDomains: ['localhost'],
+          regexFilter: `(${ADMIN_FRONTEND_ORIGIN}|${ADMIN_BACKEND_ORIGIN}|${REPLAY_SERVER_ORIGIN})/.*`,
+          initiatorDomains: [APP_HOST],
           resourceTypes: ALL_RESOURCE_TYPES,
         },
         action: { type: 'allow' },
       },
       {
         // Priority 2: allow requests to external CDN domains
-        id: 3,
+        id: 2,
         priority: 2,
         condition: {
           regexFilter:
             'https?://(cdn\\.jsdelivr\\.net|cdnjs\\.cloudflare\\.com|fonts\\.googleapis\\.com)/.*',
-          initiatorDomains: ['localhost'],
+          initiatorDomains: [APP_HOST],
           resourceTypes: ALL_RESOURCE_TYPES,
         },
         action: { type: 'allow' },
       },
       {
         // Priority 2: allow requests to social/tracking domains
-        id: 4,
+        id: 3,
         priority: 2,
         condition: {
           regexFilter:
             'https?://(s7\\.addthis\\.com|connect\\.facebook\\.net|.*\\.facebook\\.com)/.*',
-          initiatorDomains: ['localhost'],
+          initiatorDomains: [APP_HOST],
           resourceTypes: ALL_RESOURCE_TYPES,
         },
         action: { type: 'allow' },
       },
       {
         // Priority 1: anything else — redirect to replay/from_referer/<url>
-        id: 2,
+        id: 4,
         priority: 1,
         condition: {
           regexFilter: '.*',
-          initiatorDomains: ['localhost'],
+          initiatorDomains: [APP_HOST],
           resourceTypes: ALL_RESOURCE_TYPES,
         },
         action: {
           type: 'redirect',
           redirect: {
-            regexSubstitution: 'http://localhost:5051/replay/from_referer/\\0',
+            regexSubstitution: `${REPLAY_SERVER_ORIGIN}/replay/from_referer/\\0`,
           },
         },
       },
@@ -102,16 +127,23 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (!tab?.url) return;
   const match = tab.url.match(REPLAY_URL_RE);
   if (!match) return;
-  const timestamp = match[1];
   const originalUrl = match[2];
 
   if (info.menuItemId === MENU_ID) {
     chrome.tabs.create({
-      url: `http://localhost:3000/list_versions?originalUrl=${encodeURIComponent(originalUrl)}`,
+      url: `${ADMIN_FRONTEND_ORIGIN}/list_versions?originalUrl=${encodeURIComponent(originalUrl)}`,
     });
-  } else if (info.menuItemId === MENU_ID_WAYBACK) {
+  } else if (info.menuItemId === MENU_ID_REMOTE_REPLAY) {
+    const remoteLiveReplayUrl = remoteLiveReplayUrlByTab.get(tab.id);
+    if (!remoteLiveReplayUrl) {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => alert('Remote live replay URL is not available: the x-remote-live-replay-url header was not found.'),
+      });
+      return;
+    }
     chrome.tabs.create({
-      url: `https://web.archive.org/web/${timestamp}/${originalUrl}`,
+      url: remoteLiveReplayUrl
     });
   }
 });

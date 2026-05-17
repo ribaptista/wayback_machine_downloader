@@ -98,6 +98,12 @@ export function registerReplayRoutes(
         return reply.code(500).send('Could not retrieve asset');
       }
 
+      if (row.remote_live_replay_url) {
+        void reply.header(
+          'x-remote-live-replay-url',
+          row.remote_live_replay_url,
+        );
+      }
       return reply.type(row.mimetype).send(data);
     },
   );

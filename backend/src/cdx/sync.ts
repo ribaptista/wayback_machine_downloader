@@ -7,7 +7,7 @@ import { CdxRepository } from './repository';
 import { RunRepository } from '../run/repository';
 
 export const DEFAULT_CDX_BASE_URL = 'http://web.archive.org/cdx/search/cdx';
-export const DEFAULT_CDX_STRATEGY = 'json_wayback' as const;
+export const DEFAULT_CDX_STRATEGY: SupportedSyncStrategy = 'json_wayback';
 export const DEFAULT_REPLAY_BASE_URL = 'https://web.archive.org/web/';
 
 import type { ParsedCdxEntry } from './sync_strategy/cdx-parse-utils';
@@ -37,9 +37,12 @@ async function fetchTextWithRetries(url: string): Promise<string> {
   }
 }
 
+export const SUPPORTED_SYNC_STRATEGIES = ['json_wayback', 'json_pywb'] as const;
+export type SupportedSyncStrategy = (typeof SUPPORTED_SYNC_STRATEGIES)[number];
+
 export interface CdxServer {
   baseUrl?: string;
-  strategy?: 'json_wayback' | 'json_pywb';
+  strategy?: SupportedSyncStrategy;
   replayBaseUrl: string;
 }
 
@@ -149,7 +152,7 @@ export interface EvaluatedCdxEntry extends ParsedCdxEntry {
  */
 export interface CdxQueryOptions {
   baseUrl?: string;
-  strategy?: 'json_wayback' | 'json_pywb';
+  strategy?: SupportedSyncStrategy;
   pageSize?: number;
 }
 

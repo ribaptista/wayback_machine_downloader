@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Wayback Admin",
+  title: "Web Archive Workbench",
 };
 
 export default function RootLayout({

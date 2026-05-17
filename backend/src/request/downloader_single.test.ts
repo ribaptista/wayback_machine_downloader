@@ -66,6 +66,7 @@ describe('downloadEntry – single request (no redirect)', () => {
       resource_version_url: original,
       resource_version_timestamp: timestamp,
       encoding: 'utf-8',
+      remote_live_replay_url: `${replayBaseUrl}${timestamp}/${original}`,
     });
 
     expect(ctx.testRepo.countRequestErrors(requestId)).toBe(0);

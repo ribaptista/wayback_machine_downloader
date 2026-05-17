@@ -28,6 +28,7 @@ export interface InsertRequestTxParams {
   bodyParser: BodyParser | undefined;
   contentType: ContentType | undefined;
   errors: { name?: string; code: string; message: string }[];
+  remoteLiveReplayUrl: string;
 }
 
 export interface InsertRequestTxResult {
@@ -109,6 +110,7 @@ function buildAndInsertRequest(
   bodyParser: BodyParser | undefined,
   contentType: ContentType | undefined,
   redirectMetadata: RedirectResolution | undefined,
+  remoteLiveReplayUrl: string,
 ): void {
   const fullRedirect: SuccessfulRedirectResolution | undefined =
     redirectMetadata !== undefined &&
@@ -142,6 +144,7 @@ function buildAndInsertRequest(
     redirectDomain: fullRedirect?.parsedReplayUrl.parsedOriginalUrl.domain,
     redirectNormalizedDomain:
       fullRedirect?.parsedReplayUrl.parsedOriginalUrl.normalizedDomain,
+    remoteLiveReplayUrl: isSuccessful ? remoteLiveReplayUrl : undefined,
   });
 }
 
@@ -164,6 +167,7 @@ export function insertRequestTx(
     bodyParser,
     contentType,
     errors,
+    remoteLiveReplayUrl,
   } = params;
 
   const isSuccessful = errors.length === 0;
@@ -182,6 +186,7 @@ export function insertRequestTx(
       bodyParser,
       contentType,
       redirectMetadata,
+      remoteLiveReplayUrl,
     );
 
     updateStats(runRepo, runId, domainName, isSuccessful);

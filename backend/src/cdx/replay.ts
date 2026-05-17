@@ -10,7 +10,7 @@ export class NonReplayResponseError extends Error {
 
 export class InvalidReplayUrlFormat extends Error {
   constructor(url: string) {
-    super(`Invalid Wayback Machine replay URL: ${url}`);
+    super(`Invalid replay URL: ${url}`);
     this.name = 'InvalidReplayUrlFormat';
   }
 }
@@ -54,8 +54,12 @@ export class ReplayServer {
     };
   }
 
-  buildReplayUrl(timestamp: number, original: string): string {
+  buildRawReplayUrl(timestamp: number, original: string): string {
     return `${this.baseUrl}${timestamp}id_/${original}`;
+  }
+
+  buildLiveReplayUrl(timestamp: number, original: string): string {
+    return `${this.baseUrl}${timestamp}/${original}`;
   }
 
   validateReplayResponse(

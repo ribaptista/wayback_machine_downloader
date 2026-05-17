@@ -80,7 +80,7 @@ describe('downloadEntry – HTTP error responses', () => {
         body: 'Not found',
         headers: {
           'content-type': 'text/plain',
-          // no x-archive-orig-* headers — Wayback itself returned 404
+          // no x-archive-orig-* headers — remote archive server itself returned 404
         },
       },
     }));

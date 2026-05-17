@@ -21,6 +21,7 @@ export interface InsertRequestParams {
   isForeignRedirect: number | undefined;
   redirectDomain: string | undefined;
   redirectNormalizedDomain: string | undefined;
+  remoteLiveReplayUrl: string | undefined;
 }
 
 export interface RequestCdxInfoRow {
@@ -42,7 +43,8 @@ export class RequestRepository {
            duration_ms, proxy_address, is_successful,
            mimetype, location, location_original, location_timestamp,
            encoding, encoding_source, chardet_confidence,
-           is_foreign_redirect, redirect_domain, redirect_normalized_domain
+           is_foreign_redirect, redirect_domain, redirect_normalized_domain,
+           remote_live_replay_url
          )
          VALUES (?, ?,
                 ?, ?,
@@ -50,7 +52,8 @@ export class RequestRepository {
                 ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?, ?,
-                ?, ?, ?)`,
+                ?, ?, ?,
+                ?)`,
       )
       .run(
         params.id,
@@ -73,6 +76,7 @@ export class RequestRepository {
         params.isForeignRedirect,
         params.redirectDomain,
         params.redirectNormalizedDomain,
+        params.remoteLiveReplayUrl,
       ) as { changes: number };
   }
 

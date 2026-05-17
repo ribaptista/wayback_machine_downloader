@@ -183,7 +183,7 @@ export async function downloadEntry(
   const { runId } = task;
   const replayServer = new ReplayServer(task.replayBaseUrl);
   const client = new RedirectAwareClient(
-    replayServer.buildReplayUrl(task.timestamp, task.original),
+    replayServer.buildRawReplayUrl(task.timestamp, task.original),
     pool,
   );
 
@@ -230,6 +230,10 @@ export async function downloadEntry(
       bodyParser: hop?.bodyParser,
       contentType: hop?.contentType,
       errors: errors.map(parseError),
+      remoteLiveReplayUrl: replayServer.buildLiveReplayUrl(
+        currentTimestamp,
+        currentOriginal,
+      ),
     });
 
     if (!hop || hop.errors.length > 0) return false;

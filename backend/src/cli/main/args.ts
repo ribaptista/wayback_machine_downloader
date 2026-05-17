@@ -5,7 +5,9 @@ import {
   DEFAULT_CDX_BASE_URL,
   DEFAULT_CDX_STRATEGY,
   DEFAULT_REPLAY_BASE_URL,
+  SUPPORTED_SYNC_STRATEGIES,
   type CdxServer,
+  type SupportedSyncStrategy,
 } from '../../cdx/sync';
 import type { LimiterOptions } from '../../http/agents';
 import { type FetchPendingOptions } from '../../cdx/repository';
@@ -39,7 +41,7 @@ export function parseArgs(): CliArgs {
     .option('domain', {
       type: 'array',
       string: true,
-      description: 'Domain(s) to download from Wayback Machine',
+      description: 'Domain(s) to download from archive server',
     })
     .option('all', {
       type: 'boolean',
@@ -99,7 +101,7 @@ export function parseArgs(): CliArgs {
     })
     .option('cdx-strategy', {
       type: 'string',
-      choices: ['json_wayback', 'json_pywb'] as const,
+      choices: SUPPORTED_SYNC_STRATEGIES,
       description:
         'CDX fetch strategy: json_wayback (Wayback resumeKey pagination) or json_pywb (single-page jsonlines)',
       default: DEFAULT_CDX_STRATEGY,
@@ -187,7 +189,7 @@ export function parseArgs(): CliArgs {
     verbose: argv.v as boolean,
     cdxServer: {
       baseUrl: argv['cdx-base-url'] as string,
-      strategy: argv['cdx-strategy'] as 'json_wayback' | 'json_pywb',
+      strategy: argv['cdx-strategy'] as SupportedSyncStrategy,
       replayBaseUrl: argv['replay-base-url'] as string,
     },
     fetchPendingOptions: {

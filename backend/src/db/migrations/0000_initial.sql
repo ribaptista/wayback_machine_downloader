@@ -100,6 +100,7 @@ CREATE TABLE `request` (
   `is_foreign_redirect` INTEGER,
   `redirect_domain` TEXT,
   `redirect_normalized_domain` TEXT,
+  `remote_live_replay_url` TEXT,
   FOREIGN KEY (`resource_version_url`, `resource_version_timestamp`) REFERENCES resource_version(`url`, `timestamp`)
 );
 --> statement-breakpoint

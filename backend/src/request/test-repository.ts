@@ -13,6 +13,7 @@ export interface RequestRow {
   location_original: string | null;
   location_timestamp: number | null;
   is_foreign_redirect: number | null;
+  remote_live_replay_url: string | null;
 }
 
 export interface ResourceVersionRow {

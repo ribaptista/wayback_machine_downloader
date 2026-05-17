@@ -1,5 +1,5 @@
 {
-  "name": "wayback_downloader",
+  "name": "web_archive_workbench_backend",
   "version": "1.0.0",
   "description": "",
   "main": "src/index.ts",

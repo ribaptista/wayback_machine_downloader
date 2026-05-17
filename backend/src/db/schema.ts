@@ -174,6 +174,7 @@ export const request = sqliteTable(
     isForeignRedirect: integer('is_foreign_redirect'),
     redirectDomain: text('redirect_domain'),
     redirectNormalizedDomain: text('redirect_normalized_domain'),
+    remoteLiveReplayUrl: text('remote_live_replay_url'),
   },
   (table) => [
     foreignKey({

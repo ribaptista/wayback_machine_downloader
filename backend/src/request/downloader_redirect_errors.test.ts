@@ -215,7 +215,7 @@ describe('downloadEntry – redirect errors', () => {
     const original = 'http://example.com/page';
     seedResourceVersion(ctx.cdxRepo, domainName, original, timestamp);
 
-    // Location is a valid URL but not on the Wayback replay base
+    // Location is a valid URL but not on the remote archive replay base
     const externalLocation = 'https://example.com/some-other-site';
 
     ({ mockAgent: ctx.mockAgent, pool: ctx.pool } = createMockPool({
