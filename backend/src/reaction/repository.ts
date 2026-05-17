@@ -34,29 +34,11 @@ export interface MatchedConditionRow {
   not_regex_nearby: string | null;
 }
 
-export interface ReactionViewPageParams {
-  reactionTypeId: number;
-  page: number;
-  filterDomains?: string[];
+interface DomainFilterFragments {
+  join: string;
+  where: string;
+  params: string[];
 }
-
-export interface ReactionViewPageResult {
-  files: ReactionViewFileRow[];
-  urlTimestampKeys: string[];
-  totalFiles: number;
-  totalPages: number;
-  currentPage: number;
-  reactionTypes: ReactionTypeRow[];
-  domains: ReactionDomainRow[];
-  filterDomains: string[];
-  activeReactions: string[];
-  matchedConditions: Record<
-    string,
-    { id: number; regex: string; not_regex_nearby: string | null }[]
-  >;
-}
-
-const PAGE_SIZE = 20;
 
 export class ReactionRepository {
   constructor(private readonly db: DB) {}
@@ -160,12 +142,8 @@ export class ReactionRepository {
 
   // ── Reactions view page ───────────────────────────────────────────────────────
 
-  getViewPage(params: ReactionViewPageParams): ReactionViewPageResult {
-    const { reactionTypeId, page, filterDomains } = params;
-
-    const reactionTypes = this.findAllTypes();
-
-    const domains = this.db
+  findDomainsForReactionType(reactionTypeId: number): ReactionDomainRow[] {
+    return this.db
       .prepare<[number], ReactionDomainRow>(
         `SELECT DISTINCT rvs.domain_name
          FROM reaction rx
@@ -176,34 +154,49 @@ export class ReactionRepository {
          ORDER BY rvs.domain_name`,
       )
       .all(reactionTypeId);
+  }
 
-    const activeDomainIds = filterDomains?.length ? filterDomains : null;
-    const domainWhere = activeDomainIds
-      ? `AND rvs_filter.domain_name IN (${activeDomainIds.map(() => '?').join(',')})`
-      : '';
-    const domainJoin = activeDomainIds
-      ? `INNER JOIN resource_version_source rvs_filter
-           ON rvs_filter.url = rx.resource_version_url
-          AND rvs_filter.timestamp = rx.resource_version_timestamp`
-      : '';
-    const domainParams: string[] = activeDomainIds ?? [];
+  private buildDomainFilterFragments(
+    filterDomains: string[] | null | undefined,
+  ): DomainFilterFragments {
+    if (!filterDomains || filterDomains.length === 0) {
+      return { join: '', where: '', params: [] };
+    }
+    return {
+      join: `INNER JOIN resource_version_source rvs_filter
+               ON rvs_filter.url = rx.resource_version_url
+              AND rvs_filter.timestamp = rx.resource_version_timestamp`,
+      where: `AND rvs_filter.domain_name IN (${filterDomains.map(() => '?').join(',')})`,
+      params: filterDomains,
+    };
+  }
 
-    const totalFiles =
+  countFilesForReactionType(
+    reactionTypeId: number,
+    filterDomains?: string[] | null,
+  ): number {
+    const domainFragments = this.buildDomainFilterFragments(filterDomains);
+    return (
       this.db
         .prepare<unknown[], { count: number }>(
           `SELECT COUNT(*) AS count
            FROM reaction rx
-           ${domainJoin}
+           ${domainFragments.join}
            WHERE rx.reaction_type_id = ?
-           ${domainWhere}`,
+           ${domainFragments.where}`,
         )
-        .get(...domainParams, reactionTypeId)?.count ?? 0;
+        .get(...domainFragments.params, reactionTypeId)?.count ?? 0
+    );
+  }
 
-    const totalPages = Math.max(1, Math.ceil(totalFiles / PAGE_SIZE));
-    const safePage = Math.min(Math.max(1, page), totalPages);
-    const offset = (safePage - 1) * PAGE_SIZE;
-
-    const files = this.db
+  findFilesForReactionTypePage(
+    reactionTypeId: number,
+    limit: number,
+    offset: number,
+    filterDomains?: string[] | null,
+  ): ReactionViewFileRow[] {
+    const domainFragments = this.buildDomainFilterFragments(filterDomains);
+    return this.db
       .prepare<unknown[], ReactionViewFileRow>(
         `SELECT rx.resource_version_url,
                 rx.resource_version_timestamp,
@@ -215,44 +208,47 @@ export class ReactionRepository {
            ON r.resource_version_url = rx.resource_version_url
           AND r.resource_version_timestamp = rx.resource_version_timestamp
           AND r.is_successful = 1
-         ${domainJoin}
+         ${domainFragments.join}
          WHERE rx.reaction_type_id = ?
-         ${domainWhere}
+         ${domainFragments.where}
          ORDER BY rx.resource_version_timestamp DESC
          LIMIT ? OFFSET ?`,
       )
-      .all(...domainParams, reactionTypeId, PAGE_SIZE, offset);
+      .all(...domainFragments.params, reactionTypeId, limit, offset);
+  }
 
-    const urlTimestampKeys = files.map(
-      (f) => `${f.resource_version_url}|${f.resource_version_timestamp}`,
-    );
+  findMatchedConditionsForFiles(
+    files: {
+      resource_version_url: string;
+      resource_version_timestamp: number;
+    }[],
+  ): Record<
+    string,
+    { id: number; regex: string; not_regex_nearby: string | null }[]
+  > {
+    if (files.length === 0) return {};
 
-    const activeReactions = this.findActiveForPages(files);
-
-    const matchedConditionsRaw: MatchedConditionRow[] =
-      files.length > 0
-        ? this.db
-            .prepare<unknown[], MatchedConditionRow>(
-              `SELECT DISTINCT sf.resource_version_url, sf.resource_version_timestamp,
-                      sc.id AS condition_id, sc.regex, sc.not_regex_nearby
-               FROM search_file sf
-               INNER JOIN search_match sm ON sm.search_file_id = sf.id
-               INNER JOIN search_condition sc ON sc.id = sm.search_condition_id
-               WHERE (sf.resource_version_url, sf.resource_version_timestamp) IN (${files.map(() => '(?,?)').join(',')})`,
-            )
-            .all(
-              ...files.flatMap((f) => [
-                f.resource_version_url,
-                f.resource_version_timestamp,
-              ]),
-            )
-        : [];
+    const rows = this.db
+      .prepare<unknown[], MatchedConditionRow>(
+        `SELECT DISTINCT sf.resource_version_url, sf.resource_version_timestamp,
+                sc.id AS condition_id, sc.regex, sc.not_regex_nearby
+         FROM search_file sf
+         INNER JOIN search_match sm ON sm.search_file_id = sf.id
+         INNER JOIN search_condition sc ON sc.id = sm.search_condition_id
+         WHERE (sf.resource_version_url, sf.resource_version_timestamp) IN (${files.map(() => '(?,?)').join(',')})`,
+      )
+      .all(
+        ...files.flatMap((f) => [
+          f.resource_version_url,
+          f.resource_version_timestamp,
+        ]),
+      );
 
     const matchedConditions: Record<
       string,
       { id: number; regex: string; not_regex_nearby: string | null }[]
     > = {};
-    for (const row of matchedConditionsRaw) {
+    for (const row of rows) {
       const key = `${row.resource_version_url}|${row.resource_version_timestamp}`;
       (matchedConditions[key] ??= []).push({
         id: row.condition_id,
@@ -260,18 +256,6 @@ export class ReactionRepository {
         not_regex_nearby: row.not_regex_nearby,
       });
     }
-
-    return {
-      files,
-      urlTimestampKeys,
-      totalFiles,
-      totalPages,
-      currentPage: safePage,
-      reactionTypes,
-      domains,
-      filterDomains: activeDomainIds ?? [],
-      activeReactions,
-      matchedConditions,
-    };
+    return matchedConditions;
   }
 }

@@ -44,7 +44,9 @@ export function registerReactionRoutes(
         .code(400)
         .send({ error: 'Missing or invalid reaction_type_id' });
     }
-    const page = query.page ? Math.max(1, Number(query.page)) : 1;
+    const parsed = Number(query.page);
+    const page =
+      Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1;
     const filterDomains = toArray(query['domain[]']).filter(Boolean);
     return reply.send(
       getReactionsViewData(reactionRepo, reactionTypeId, page, filterDomains),

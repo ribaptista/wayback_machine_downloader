@@ -19,13 +19,11 @@ interface ReactionsViewFile {
 
 interface ReactionsViewData {
   files: ReactionsViewFile[];
-  urlTimestampKeys: string[];
   totalFiles: number;
   totalPages: number;
   currentPage: number;
   reactionTypes: ReactionType[];
   domains: { id: string; domain: string }[];
-  filterDomains: string[];
   activeReactions: string[];
   matchedConditions: Record<string, MatchedCondition[]>;
 }
@@ -69,7 +67,7 @@ function ReactionsViewInner() {
       .then((d: ReactionsViewData) => {
         setData(d);
         setActiveReactions(new Set(d.activeReactions));
-        setLocalDomains(new Set(d.filterDomains));
+        setLocalDomains(new Set(filterDomainsKey ? filterDomainsKey.split(",") : []));
       })
       .catch((e) => setError(e.message));
   }, [reactionTypeId, page, filterDomainsKey]);

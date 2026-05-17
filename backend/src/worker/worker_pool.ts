@@ -55,7 +55,9 @@ export class WorkerPool {
     if (this.terminated) throw new Error('WorkerPool is terminated');
     const worker = await this.acquire();
     try {
-      return await workerRun<TRequest, TResponse>(worker, request);
+      const result = await workerRun<TRequest, TResponse>(worker, request);
+      this.release(worker);
+      return result;
     } catch (err) {
       if (!(err instanceof NodeWorkerError)) {
         await worker.terminate();
