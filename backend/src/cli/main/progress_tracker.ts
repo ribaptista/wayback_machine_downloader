@@ -2,14 +2,24 @@ import cliProgress from 'cli-progress';
 
 export type ProgressStats = {
   total: number;
+  metrics: BarMetrics;
+};
+
+type BarMetrics = {
   succeeded: number;
   failed: number;
+  scanned: number;
+  newEntries: number;
 };
 
 export class ProgressTracker {
   private total: number;
-  private succeeded = 0;
-  private failed = 0;
+  private metrics: BarMetrics = {
+    succeeded: 0,
+    failed: 0,
+    scanned: 0,
+    newEntries: 0,
+  };
 
   private multiBar: cliProgress.MultiBar;
   private bar: cliProgress.SingleBar | null = null;
@@ -19,7 +29,7 @@ export class ProgressTracker {
     this.multiBar = new cliProgress.MultiBar(
       {
         format:
-          'Progress |{bar}| {value}/{total} | succeeded: {succeeded} | failed: {failed} | ETA: {eta_formatted}',
+          'Progress |{bar}| {value}/{total} | succeeded: {succeeded} | failed: {failed} | cdx scanned: {scanned} | new: {newEntries} | ETA: {eta_formatted}',
         clearOnComplete: false,
         hideCursor: true,
         forceRedraw: true,
@@ -29,10 +39,7 @@ export class ProgressTracker {
   }
 
   startProgressBar(): void {
-    this.bar = this.multiBar.create(this.total, 0, {
-      succeeded: this.succeeded,
-      failed: this.failed,
-    });
+    this.bar = this.multiBar.create(this.total, 0, this.metrics);
   }
 
   stopProgressBar(): void {
@@ -41,25 +48,28 @@ export class ProgressTracker {
 
   log(msg: string): void {
     this.multiBar.log(msg + '\n');
-    this.bar?.update({ succeeded: this.succeeded, failed: this.failed });
   }
 
   getStats(): ProgressStats {
     return {
       total: this.total,
-      succeeded: this.succeeded,
-      failed: this.failed,
+      metrics: this.metrics,
     };
   }
 
-  incrementTotal(count: number): void {
-    this.total += count;
-    this.bar?.setTotal(this.total);
+  onEntriesSynced(scanned: number, newEntries: number): void {
+    this.metrics.scanned += scanned;
+    this.metrics.newEntries += newEntries;
+    if (newEntries > 0) {
+      this.total += newEntries;
+      this.bar?.setTotal(this.total);
+    }
+    this.bar?.update(this.metrics);
   }
 
   pushResult(ok: boolean): void {
-    if (ok) this.succeeded++;
-    else this.failed++;
-    this.bar?.increment({ succeeded: this.succeeded, failed: this.failed });
+    if (ok) this.metrics.succeeded++;
+    else this.metrics.failed++;
+    this.bar?.increment(this.metrics);
   }
 }

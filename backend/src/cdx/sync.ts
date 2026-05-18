@@ -187,8 +187,6 @@ export async function* fetchCdxRows(
 
   while (true) {
     const url = strategy.generateURL(cursor);
-    log(`[${domain}] Fetching CDX page ${page}`);
-
     const text = await fetchTextWithRetries(url, log);
     const result = strategy.parseResult(text);
     const entries = strategy.parseEntries(result);

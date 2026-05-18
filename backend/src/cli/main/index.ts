@@ -21,7 +21,7 @@ import {
   type CdxQueryFilter,
   type EvaluatedCdxEntry,
 } from '../../cdx/sync';
-import { ProgressTracker } from '../progress_tracker';
+import { ProgressTracker } from './progress_tracker';
 import { AgentPool } from '../../http/agent_pool';
 import { downloadEntry, type DownloadTask } from '../../request/downloader';
 
@@ -247,7 +247,7 @@ async function syncDomain(
   cdxQueryRange: CdxQueryFilter,
   pageSize: number,
   log: (msg: string) => void = console.log,
-  onNewEntries?: (count: number) => void,
+  onEntries?: (scanned: number, newCount: number) => void,
 ): Promise<SyncDomainResult | null> {
   let domainEntryCount = 0;
   const newEntriesCapped: NewEntryPreview[] = [];
@@ -273,7 +273,7 @@ async function syncDomain(
     );
     newEntryCount += newEntries.length;
     appendNewEntryPreviewsCapped(newEntriesCapped, newEntries);
-    if (newEntries.length > 0) onNewEntries?.(newEntries.length);
+    onEntries?.(pageEntries.length, newEntries.length);
   }
 
   if (domainEntryCount === 0) return null;
@@ -292,7 +292,7 @@ async function syncDomains(
   cdxQueryRange: CdxQueryFilter,
   pageSize: number,
   log: (msg: string) => void = console.log,
-  onNewEntries?: (count: number) => void,
+  onEntries?: (scanned: number, newCount: number) => void,
 ): Promise<SyncDomainResult[]> {
   const summary: SyncDomainResult[] = [];
 
@@ -311,7 +311,7 @@ async function syncDomains(
         cdxQueryRange,
         pageSize,
         log,
-        onNewEntries,
+        onEntries,
       );
       if (result === null) {
         log('  No CDX entries found.');
@@ -339,7 +339,7 @@ async function runSyncMode(
   pageSize: number,
   runId: string,
   log: (msg: string) => void = console.log,
-  onNewEntries?: (count: number) => void,
+  onEntries?: (scanned: number, newCount: number) => void,
 ): Promise<void> {
   const cdxSourceId = getOrCreateCdxSource(cdxRepo, cdxServer);
 
@@ -355,7 +355,7 @@ async function runSyncMode(
     cdxQueryRange,
     pageSize,
     log,
-    onNewEntries,
+    onEntries,
   );
 
   if (dryRun) {
@@ -423,7 +423,7 @@ function handleCdxSync(
   cdxPageSize: number,
   runId: string,
   log: (msg: string) => void,
-  onNewEntries: (count: number) => void,
+  onEntries: (scanned: number, newCount: number) => void,
 ): IsSyncDone {
   if (skipCdxSync) {
     return () => true;
@@ -442,7 +442,7 @@ function handleCdxSync(
     cdxPageSize,
     runId,
     log,
-    onNewEntries,
+    onEntries,
   )
     .then(() => {
       syncDone = true;
@@ -523,7 +523,7 @@ async function runLiveRun(
     cdxPageSize,
     runId,
     (msg) => tracker.log(msg),
-    (count) => tracker.incrementTotal(count),
+    (scanned, newCount) => tracker.onEntriesSynced(scanned, newCount),
   );
 
   const runDownloads = async (tasks: DownloadTask[]): Promise<void> => {
@@ -551,7 +551,7 @@ async function runLiveRun(
   );
 
   tracker.stopProgressBar();
-  const { succeeded, failed } = tracker.getStats();
+  const { succeeded, failed } = tracker.getStats().metrics;
   console.log(`Complete. succeeded: ${succeeded}, failed: ${failed}`);
 }
 
