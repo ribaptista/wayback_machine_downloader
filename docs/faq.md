@@ -54,7 +54,10 @@ canonical version automatically.
 ### Does it support pywb?
 
 Yes. Use `--cdx-strategy json_pywb` and point `--cdx-base-url` and
-`--replay-base-url` at your pywb collection. See [cli.md](cli.md#examples).
+`--replay-base-url` at your pywb collection. See
+[Importing from a pywb server](pywb-import.md) for a full walkthrough
+(including running pywb in Docker and recording pages), or
+[cli.md](cli.md#examples) for the CLI flags.
 
 ### Can I expose this on a public host?
 

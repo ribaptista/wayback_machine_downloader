@@ -1,10 +1,10 @@
-import { fetch } from 'undici';
 import type { DB } from '../db/conn';
 import { normalizeUrl, normalizeDomain } from '../http/normalized_url';
 import { WaybackCdxStrategy } from './sync_strategy/cdx-strategy-wayback';
 import { PywbCdxStrategy } from './sync_strategy/cdx-strategy-pywb';
 import { CdxRepository } from './repository';
 import { RunRepository } from '../run/repository';
+import type { AgentPool } from '../http/agent_pool';
 
 export const DEFAULT_CDX_BASE_URL = 'http://web.archive.org/cdx/search/cdx';
 export const DEFAULT_CDX_STRATEGY: SupportedSyncStrategy = 'json_wayback';
@@ -16,26 +16,20 @@ export { parseCdxRows } from './sync_strategy/cdx-strategy-wayback';
 
 async function fetchTextWithRetries(
   url: string,
+  pool: AgentPool,
   log: (msg: string) => void = console.log,
 ): Promise<string> {
   for (let attempt = 1; ; attempt++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(new Error('CDX fetch timed out after 60s')),
-      60_000,
-    );
     try {
-      const response = await fetch(url, { signal: controller.signal });
-      if (!response.ok) {
-        throw new Error(`CDX fetch failed with status ${response.status}`);
+      const response = await pool.fetch(url);
+      if (response.statusCode !== 200) {
+        throw new Error(`CDX fetch failed with status ${response.statusCode}`);
       }
-      return await response.text();
+      return response.body.toString('utf8');
     } catch (err) {
       log(`CDX fetch attempt ${attempt} failed: ${err}`);
       log(`Retrying in 10 seconds...`);
       await new Promise((resolve) => setTimeout(resolve, 10_000));
-    } finally {
-      clearTimeout(timeout);
     }
   }
 }
@@ -169,6 +163,7 @@ export type CdxQueryOptions = {
 export async function* fetchCdxRows(
   domain: string,
   options: CdxQueryOptions,
+  pool: AgentPool,
   log: (msg: string) => void = console.log,
 ): AsyncGenerator<EvaluatedCdxEntry[], void, void> {
   const {
@@ -187,7 +182,7 @@ export async function* fetchCdxRows(
 
   while (true) {
     const url = strategy.generateURL(cursor);
-    const text = await fetchTextWithRetries(url, log);
+    const text = await fetchTextWithRetries(url, pool, log);
     const result = strategy.parseResult(text);
     const entries = strategy.parseEntries(result);
     yield entries.map((entry): EvaluatedCdxEntry => {

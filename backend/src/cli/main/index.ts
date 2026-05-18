@@ -246,6 +246,7 @@ async function syncDomain(
   cdxServer: CdxServer,
   cdxQueryRange: CdxQueryFilter,
   pageSize: number,
+  pool: AgentPool,
   log: (msg: string) => void = console.log,
   onEntries?: (scanned: number, newCount: number) => void,
 ): Promise<SyncDomainResult | null> {
@@ -259,7 +260,7 @@ async function syncDomain(
     query: cdxQueryRange,
   };
 
-  for await (const pageEntries of fetchCdxRows(domain, cdxOptions, log)) {
+  for await (const pageEntries of fetchCdxRows(domain, cdxOptions, pool, log)) {
     domainEntryCount += pageEntries.length;
     const newEntries = handleSyncResultPage(
       db,
@@ -291,6 +292,7 @@ async function syncDomains(
   cdxServer: CdxServer,
   cdxQueryRange: CdxQueryFilter,
   pageSize: number,
+  pool: AgentPool,
   log: (msg: string) => void = console.log,
   onEntries?: (scanned: number, newCount: number) => void,
 ): Promise<SyncDomainResult[]> {
@@ -310,6 +312,7 @@ async function syncDomains(
         cdxServer,
         cdxQueryRange,
         pageSize,
+        pool,
         log,
         onEntries,
       );
@@ -338,6 +341,7 @@ async function runSyncMode(
   cdxQueryRange: CdxQueryFilter,
   pageSize: number,
   runId: string,
+  pool: AgentPool,
   log: (msg: string) => void = console.log,
   onEntries?: (scanned: number, newCount: number) => void,
 ): Promise<void> {
@@ -354,6 +358,7 @@ async function runSyncMode(
     cdxServer,
     cdxQueryRange,
     pageSize,
+    pool,
     log,
     onEntries,
   );
@@ -380,6 +385,7 @@ async function runDryRun(
   cdxPageSize: number,
   fetchPendingOptions: FetchPendingOptions,
   runId: string,
+  pool: AgentPool,
 ): Promise<void> {
   if (!skipCdxSync) {
     await runSyncMode(
@@ -393,6 +399,7 @@ async function runDryRun(
       cdxQueryRange,
       cdxPageSize,
       runId,
+      pool,
     );
   }
   const pendingTaskCounts = cdxRepo.countPendingTasks(
@@ -424,6 +431,7 @@ function handleCdxSync(
   runId: string,
   log: (msg: string) => void,
   onEntries: (scanned: number, newCount: number) => void,
+  pool: AgentPool,
 ): IsSyncDone {
   if (skipCdxSync) {
     return () => true;
@@ -441,6 +449,7 @@ function handleCdxSync(
     cdxQueryRange,
     cdxPageSize,
     runId,
+    pool,
     log,
     onEntries,
   )
@@ -491,11 +500,8 @@ async function runLiveRun(
   cdxServer: CdxServer,
   cdxQueryRange: CdxQueryFilter,
   runId: string,
+  pool: AgentPool,
 ): Promise<void> {
-  const pool = new AgentPool({
-    proxyFile: downloadOptions.proxyFile,
-    limiterOptions: downloadOptions.limiterOptions,
-  });
   const limit = pLimit(downloadOptions.concurrency);
 
   const pendingTaskCounts = cdxRepo.countPendingTasks(
@@ -524,6 +530,7 @@ async function runLiveRun(
     runId,
     (msg) => tracker.log(msg),
     (scanned, newCount) => tracker.onEntriesSynced(scanned, newCount),
+    pool,
   );
 
   const runDownloads = async (tasks: DownloadTask[]): Promise<void> => {
@@ -576,6 +583,11 @@ async function main() {
     return;
   }
 
+  const pool = new AgentPool({
+    proxyFile: args.downloadOptions.proxyFile,
+    limiterOptions: args.downloadOptions.limiterOptions,
+  });
+
   if (args.dryRun) {
     await runDryRun(
       db,
@@ -589,6 +601,7 @@ async function main() {
       args.cdxPageSize,
       args.fetchPendingOptions,
       runId,
+      pool,
     );
     return;
   }
@@ -606,6 +619,7 @@ async function main() {
     args.cdxServer,
     args.cdxQueryFilter,
     runId,
+    pool,
   );
 }
 

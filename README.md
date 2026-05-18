@@ -97,6 +97,7 @@ For a more detailed walkthrough, see [docs/quick-start.md](docs/quick-start.md).
   - [Chrome extension](docs/chrome-extension.md) — install, verify, use
 - **Day-to-day**
   - [Common workflows](docs/common-workflows.md) — end-to-end recipes
+  - [Importing from a pywb server](docs/pywb-import.md) — capture pages locally with pywb, then ingest
   - [Troubleshooting](docs/troubleshooting.md) — symptoms → fixes
   - [FAQ](docs/faq.md)
 - [Screenshots](docs/screenshots.md)
