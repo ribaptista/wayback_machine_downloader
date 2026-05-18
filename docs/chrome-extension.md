@@ -11,6 +11,8 @@ the archived HTML references, which usually breaks rendering.
   - the admin frontend (`localhost:3000`)
   - the admin backend (`localhost:5050`)
   - the replay server (`localhost:5051`)
+  - an optional local pywb server (`localhost:8080`), so recording into
+    pywb isn't intercepted — see [Importing from a pywb server](pywb-import.md)
   - a small CDN/font/social allowlist (jsDelivr, cdnjs, Google Fonts, etc.)
 - **Redirects** everything else to
   `http://localhost:5051/replay/from_referer/<url>`, so the replay server
@@ -73,6 +75,7 @@ const APP_HOST = 'localhost';
 const ADMIN_FRONTEND_ORIGIN = `http://${APP_HOST}:3000`;
 const ADMIN_BACKEND_ORIGIN = `http://${APP_HOST}:5050`;
 const REPLAY_SERVER_ORIGIN = `http://${APP_HOST}:5051`;
+const PYWB_SERVER_ORIGIN = `http://${APP_HOST}:8080`;
 ```
 
 If you changed any port or host in [backend/src/config.ts](../backend/src/config.ts),
