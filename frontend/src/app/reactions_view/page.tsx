@@ -86,6 +86,13 @@ export default function ReactionsViewPage() {
   function applyDomainFilter(newDomains: Set<string>) {
     const allDomainIds = (data?.domains ?? []).map((d) => d.domain_name);
     const domains = collapseIfAllSelected(newDomains, allDomainIds);
+    // "Empty filter" means "no narrowing" (i.e. all domains). Snap the local
+    // selection back to all so the UI reflects that, even when the URL
+    // doesn't change (single-domain case: unchecking the only domain would
+    // otherwise leave the box visually unchecked).
+    if (domains.size === 0) {
+      setLocalDomains(new Set(allDomainIds));
+    }
     router.push(reactionsViewRoute(reactionTypeId, 1, domains));
   }
 
