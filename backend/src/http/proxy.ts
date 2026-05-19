@@ -4,7 +4,7 @@ import { ProxyAgent } from 'undici';
 const CONNECT_TIMEOUT_MS = 10_000;
 const KEEP_ALIVE_TIMEOUT_MS = 30_000;
 const KEEP_ALIVE_MAX_TIMEOUT_MS = 60_000;
-const AGENT_CONNECTIONS = 300;
+const AGENT_CONNECTIONS = 3;
 
 export function createProxyAgent(proxy: string): ProxyAgent {
   return new ProxyAgent({

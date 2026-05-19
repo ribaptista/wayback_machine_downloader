@@ -24,6 +24,14 @@ import {
 import { ProgressTracker } from './progress_tracker';
 import { AgentPool } from '../../http/agent_pool';
 import { downloadEntry, type DownloadTask } from '../../request/downloader';
+import { RetryTaskQueue, type IsSyncDone } from './retry_task_queue';
+
+type RetryEntry = {
+  url: string;
+  timestamp: number;
+  domain_name: string;
+  normalized_name: string;
+};
 
 import type { Database as DB } from 'better-sqlite3';
 
@@ -116,15 +124,6 @@ function printSyncDryRunSummary(
   }
 }
 
-type RetryEntry = {
-  url: string;
-  timestamp: number;
-  domain_name: string;
-  normalized_name: string;
-};
-
-type IsSyncDone = () => boolean;
-
 function samplePendingEntries(
   cdxRepo: CdxRepository,
   domains: string[],
@@ -161,48 +160,6 @@ function runDownloadPlan(
     ...(verbose ? { entriesCapped: sampledByDomain!.get(domain)! } : {}),
   }));
   printDownloadPlanSummary(summary, verbose);
-}
-
-async function runRetryMode(
-  cdxRepo: CdxRepository,
-  domains: string[],
-  fetchPendingOptions: FetchPendingOptions,
-  output: string,
-  replayBaseUrl: string,
-  runId: string,
-  isSyncDone: IsSyncDone,
-  runDownloads: (tasks: DownloadTask[]) => Promise<void>,
-): Promise<void> {
-  const outputFolder = output;
-
-  while (true) {
-    const pendingEntriesPage = cdxRepo.findRetryTasksPage({
-      domainIds: domains,
-      runId,
-      fetchPendingOptions,
-      limit: RETRY_TASK_PAGE_SIZE,
-    }) as RetryEntry[];
-
-    if (pendingEntriesPage.length === 0) {
-      if (!isSyncDone()) {
-        await new Promise((r) => setTimeout(r, 1000));
-        continue;
-      }
-      break;
-    }
-
-    const tasks = pendingEntriesPage.map((entry) => ({
-      runId,
-      timestamp: entry.timestamp,
-      original: entry.url,
-      domainName: entry.domain_name,
-      normalizedDomain: entry.normalized_name,
-      outputFolder,
-      replayBaseUrl,
-    }));
-
-    await runDownloads(tasks);
-  }
 }
 
 function handleSyncResultPage(
@@ -470,27 +427,6 @@ function handleCdxSync(
   };
 }
 
-async function runDownloadTasks(
-  db: DB,
-  reqRepo: RequestRepository,
-  cdxRepo: CdxRepository,
-  runRepo: RunRepository,
-  tasks: DownloadTask[],
-  pool: AgentPool,
-  limit: ReturnType<typeof pLimit>,
-  onDownloadResult: (ok: boolean) => void,
-): Promise<void> {
-  await Promise.all(
-    tasks.map((task) =>
-      limit(async () => {
-        onDownloadResult(
-          await downloadEntry(db, reqRepo, cdxRepo, runRepo, task, pool),
-        );
-      }),
-    ),
-  );
-}
-
 async function runLiveRun(
   db: DB,
   cdxRepo: CdxRepository,
@@ -505,8 +441,6 @@ async function runLiveRun(
   cdxQueryRange: CdxQueryFilter,
   runId: string,
 ): Promise<void> {
-  const limit = pLimit(downloadOptions.concurrency);
-
   const pendingTaskCounts = cdxRepo.countPendingTasks(
     domains,
     fetchPendingOptions,
@@ -546,20 +480,8 @@ async function runLiveRun(
     pool,
   );
 
-  const runDownloads = async (tasks: DownloadTask[]): Promise<void> => {
-    await runDownloadTasks(
-      db,
-      reqRepo,
-      cdxRepo,
-      runRepo,
-      tasks,
-      pool,
-      limit,
-      (ok) => tracker.pushResult(ok),
-    );
-  };
-
-  await runRetryMode(
+  const queue = new RetryTaskQueue(
+    downloadOptions.concurrency,
     cdxRepo,
     domains,
     fetchPendingOptions,
@@ -567,8 +489,14 @@ async function runLiveRun(
     cdxServer.replayBaseUrl,
     runId,
     isSyncDone,
-    runDownloads,
+    async (task) => {
+      tracker.pushResult(
+        await downloadEntry(db, reqRepo, cdxRepo, runRepo, task, pool),
+      );
+    },
   );
+
+  await queue.run();
 
   tracker.stopProgressBar();
   const { succeeded, failed } = tracker.getStats().metrics;
