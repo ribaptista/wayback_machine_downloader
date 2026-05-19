@@ -25,11 +25,20 @@ export default function DomainErrorsPage() {
   // Applied filters come directly from the URL
   const appliedCodes = useMemo(() => params.getAll('error_code[]'), [params]);
   const appliedNames = useMemo(() => params.getAll('error_name[]'), [params]);
-  const appliedCodesKey = appliedCodes.join(',');
-  const appliedNamesKey = appliedNames.join(',');
 
   // Filter options loaded from the API
   const [filterOptions, setFilterOptions] = useState<FilterOption[]>([]);
+
+  // Distinct codes and names for filter pills — derived early so the sync
+  // effects below can use them as the "all" fallback.
+  const distinctCodes = useMemo(
+    () => [...new Set(filterOptions.map((f) => f.error_code))],
+    [filterOptions],
+  );
+  const distinctNames = useMemo(
+    () => [...new Set(filterOptions.map((f) => f.error_name))],
+    [filterOptions],
+  );
 
   // Local (uncommitted) selections — synced from URL whenever URL changes
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(
@@ -39,28 +48,29 @@ export default function DomainErrorsPage() {
     new Set(appliedNames),
   );
 
-  // Keep local selections in sync when URL params change (e.g. back/forward navigation)
+  // Keep local selections in sync when URL params change (e.g. back/forward navigation).
+  // Empty applied array means "no filter" (= all), so fall back to all distinct options.
   useEffect(() => {
     setSelectedCodes(
-      new Set(appliedCodesKey ? appliedCodesKey.split(',') : []),
+      appliedCodes.length > 0 ? new Set(appliedCodes) : new Set(distinctCodes),
     );
-  }, [appliedCodesKey]);
+  }, [appliedCodes, distinctCodes]);
   useEffect(() => {
     setSelectedNames(
-      new Set(appliedNamesKey ? appliedNamesKey.split(',') : []),
+      appliedNames.length > 0 ? new Set(appliedNames) : new Set(distinctNames),
     );
-  }, [appliedNamesKey]);
+  }, [appliedNames, distinctNames]);
 
   // Load filter options once per domain; default local selections to "all"
   // when no filter is in the URL. We deliberately depend on `domain` only —
   // the URL-key reads decide *initial* seeding and must not retrigger this
   // effect when the user edits filters.
-  const seedKeysRef = useRef({
-    codes: appliedCodesKey,
-    names: appliedNamesKey,
+  const seedRef = useRef({
+    codes: appliedCodes,
+    names: appliedNames,
   });
   useEffect(() => {
-    seedKeysRef.current = { codes: appliedCodesKey, names: appliedNamesKey };
+    seedRef.current = { codes: appliedCodes, names: appliedNames };
   });
   useEffect(() => {
     if (!domain) return;
@@ -69,8 +79,10 @@ export default function DomainErrorsPage() {
         setFilterOptions(opts);
         const allCodes = [...new Set(opts.map((f) => f.error_code))];
         const allNames = [...new Set(opts.map((f) => f.error_name))];
-        if (!seedKeysRef.current.codes) setSelectedCodes(new Set(allCodes));
-        if (!seedKeysRef.current.names) setSelectedNames(new Set(allNames));
+        if (seedRef.current.codes.length === 0)
+          setSelectedCodes(new Set(allCodes));
+        if (seedRef.current.names.length === 0)
+          setSelectedNames(new Set(allNames));
       })
       .catch(() => {});
   }, [domain]);
@@ -78,7 +90,7 @@ export default function DomainErrorsPage() {
   const { entries, loading, loadingMore, error, sentinelRef } =
     useInfiniteScroll({
       enabled: !!domain,
-      resetKey: `${domain}|${appliedCodesKey}|${appliedNamesKey}`,
+      resetKey: `${domain}|${JSON.stringify(appliedCodes)}|${appliedNames.join(',')}`,
       fetchPage: (cursor: ErrorCursor | null) =>
         fetchDomainErrors({
           domain,
@@ -87,10 +99,6 @@ export default function DomainErrorsPage() {
           cursor,
         }),
     });
-
-  // Distinct codes and names for filter pills
-  const distinctCodes = [...new Set(filterOptions.map((f) => f.error_code))];
-  const distinctNames = [...new Set(filterOptions.map((f) => f.error_name))];
 
   function applyFilters() {
     const codes = collapseIfAllSelected(selectedCodes, distinctCodes);
@@ -116,7 +124,10 @@ export default function DomainErrorsPage() {
           <CardContent className="py-3 space-y-3">
             <ToggleGroupWithSelectAll
               label="Error Code"
-              items={distinctCodes.map((c) => ({ id: c, label: c }))}
+              items={distinctCodes.map((c) => ({
+                id: c,
+                label: c || '(no code)',
+              }))}
               selected={selectedCodes}
               onChange={setSelectedCodes}
             />
@@ -124,7 +135,7 @@ export default function DomainErrorsPage() {
               label="Error Name"
               items={distinctNames.map((n) => ({
                 id: n,
-                label: n || '(no name)',
+                label: n,
               }))}
               selected={selectedNames}
               onChange={setSelectedNames}

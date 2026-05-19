@@ -36,7 +36,7 @@ export function registerDomainRoutes(
     };
     const domain = query.domain?.trim() || '';
     if (!domain) return reply.code(400).send({ error: 'Missing domain' });
-    const filterCodes = toArray(query['error_code[]']).filter(Boolean);
+    const filterCodes = toArray(query['error_code[]']);
     const filterNames = toArray(query['error_name[]']).filter(Boolean);
     const cursorUrl = query.cursor_url?.trim() || null;
     const cursorTs = query.cursor_ts ? Number(query.cursor_ts) : null;
